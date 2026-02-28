@@ -9,9 +9,14 @@ use Mautic\CoreBundle\Form\DataTransformer\IdToEntityModelTransformer;
 use Mautic\CoreBundle\Form\EventListener\CleanFormSubscriber;
 use Mautic\CoreBundle\Form\EventListener\FormExitSubscriber;
 use Mautic\CoreBundle\Form\Type\FormButtonsType;
+use Mautic\LeadBundle\Entity\Lead;
+use Mautic\LeadBundle\Entity\LeadRepository;
 use Mautic\UserBundle\Entity\User;
 use Mautic\UserBundle\Form\Type\UserListType;
+use MauticPlugin\MautomicCrmBundle\Entity\Deal;
+use MauticPlugin\MautomicCrmBundle\Entity\DealRepository;
 use MauticPlugin\MautomicCrmBundle\Entity\Task;
+use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
 use Symfony\Component\Form\Extension\Core\Type\DateTimeType;
@@ -46,6 +51,34 @@ class TaskType extends AbstractType
             'label_attr' => ['class' => 'control-label'],
             'attr'       => ['class' => 'form-control'],
             'required'   => false,
+        ]);
+
+        $builder->add('deal', EntityType::class, [
+            'class'         => Deal::class,
+            'choice_label'  => 'name',
+            'label'         => 'mautomic_crm.task.deal',
+            'label_attr'    => ['class' => 'control-label'],
+            'attr'          => ['class' => 'form-control'],
+            'required'      => false,
+            'placeholder'   => 'mautomic_crm.task.deal.choose',
+            'query_builder' => fn (DealRepository $repo) => $repo->createQueryBuilder('d')
+                ->where('d.isPublished = :published')
+                ->setParameter('published', true)
+                ->orderBy('d.name', 'ASC'),
+        ]);
+
+        $builder->add('contact', EntityType::class, [
+            'class'         => Lead::class,
+            'choice_label'  => fn (Lead $lead) => $lead->getName() ?: $lead->getEmail() ?: 'Contact #'.$lead->getId(),
+            'label'         => 'mautomic_crm.task.contact',
+            'label_attr'    => ['class' => 'control-label'],
+            'attr'          => ['class' => 'form-control'],
+            'required'      => false,
+            'placeholder'   => 'mautomic_crm.task.contact.choose',
+            'query_builder' => fn (LeadRepository $repo) => $repo->createQueryBuilder('l')
+                ->orderBy('l.lastname', 'ASC')
+                ->addOrderBy('l.firstname', 'ASC')
+                ->setMaxResults(200),
         ]);
 
         $builder->add('dueDate', DateTimeType::class, [

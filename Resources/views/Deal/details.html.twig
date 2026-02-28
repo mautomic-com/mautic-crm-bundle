@@ -96,6 +96,44 @@
                   </span>
               </div>
           </div>
+
+          <div class="pa-md">
+              <h4>{{ 'mautomic_crm.deal.tasks'|trans }}</h4>
+              {% if tasks is defined and tasks|length > 0 %}
+                  <table class="table table-hover">
+                      <thead>
+                          <tr>
+                              <th>{{ 'mautomic_crm.task.title'|trans }}</th>
+                              <th>{{ 'mautomic_crm.task.status'|trans }}</th>
+                              <th>{{ 'mautomic_crm.task.priority'|trans }}</th>
+                              <th>{{ 'mautomic_crm.task.due_date'|trans }}</th>
+                              <th>{{ 'mautomic_crm.task.owner'|trans }}</th>
+                          </tr>
+                      </thead>
+                      <tbody>
+                          {% for task in tasks %}
+                              {% set isOverdue = task.dueDate is not null and task.dueDate < date() and task.status != 'completed' %}
+                              <tr{% if isOverdue %} class="text-danger"{% endif %}>
+                                  <td>
+                                      <a data-toggle="ajax" href="{{ path('mautic_mautomic_crm_task_action', {'objectAction': 'view', 'objectId': task.id}) }}">
+                                          {{ task.title }}
+                                      </a>
+                                      {% if isOverdue %} <span class="label label-danger">{{ 'mautomic_crm.task.overdue'|trans }}</span>{% endif %}
+                                  </td>
+                                  <td>{{ ('mautomic_crm.task.status.' ~ task.status)|trans }}</td>
+                                  <td>{{ ('mautomic_crm.task.priority.' ~ task.priority)|trans }}</td>
+                                  <td>{% if task.dueDate %}{{ task.dueDate|date('Y-m-d H:i') }}{% else %}-{% endif %}</td>
+                                  <td>{% if task.owner %}{{ task.owner.name }}{% else %}-{% endif %}</td>
+                              </tr>
+                          {% endfor %}
+                      </tbody>
+                  </table>
+              {% else %}
+                  <div class="alert alert-info">
+                      {{ 'mautomic_crm.deal.tasks.empty'|trans }}
+                  </div>
+              {% endif %}
+          </div>
       </div>
 
       <div class="col-md-3 bdr-l height-auto">

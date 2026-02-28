@@ -34,7 +34,10 @@ class TaskModel extends FormModel
     public function getEntity($id = null): ?Task
     {
         if (null === $id) {
-            return new Task();
+            $task = new Task();
+            $task->setOwner($this->userHelper->getUser());
+
+            return $task;
         }
 
         return parent::getEntity($id);
