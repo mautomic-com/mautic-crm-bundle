@@ -43,12 +43,18 @@ jobs:
         with:
           working-directory: mautic
 
-      - name: PHPStan (level 6)
+      - name: Build test cache for PHPStan
         working-directory: mautic
         env:
-          SYMFONY_ENV: dev
-          APP_ENV: dev
+          APP_ENV: test
           APP_DEBUG: 1
+        run: |
+          if [ ! -f var/cache/test/AppKernelTestDebugContainer.xml ]; then
+            php bin/console > /dev/null 2>&1 || true
+          fi
+
+      - name: PHPStan (level 6)
+        working-directory: mautic
         run: php -d memory_limit=1G bin/phpstan analyse plugins/MautomicCrmBundle --level=6 --no-progress
 
       - name: Coding Standards
