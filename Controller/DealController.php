@@ -12,6 +12,26 @@ use Symfony\Component\HttpFoundation\Response;
 
 class DealController extends AbstractStandardFormController
 {
+    /**
+     * @param array<string, mixed> $args
+     * @param mixed                $action
+     *
+     * @return array<string, mixed>
+     */
+    protected function getViewArguments(array $args, $action): array
+    {
+        if ('view' === $action) {
+            $entity = $args['viewParameters']['item'] ?? null;
+            if (null !== $entity && method_exists($entity, 'getId')) {
+                /** @var \MauticPlugin\MautomicCrmBundle\Entity\TaskRepository $taskRepo */
+                $taskRepo                        = $this->getModel('mautomic_crm.task')->getRepository();
+                $args['viewParameters']['tasks'] = $taskRepo->findByDeal((int) $entity->getId());
+            }
+        }
+
+        return $args;
+    }
+
     protected function getTemplateBase(): string
     {
         return '@MautomicCrm/Deal';

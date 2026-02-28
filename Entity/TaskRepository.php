@@ -53,4 +53,17 @@ class TaskRepository extends CommonRepository
     {
         return $this->getStandardSearchCommands();
     }
+
+    /**
+     * @return Task[]
+     */
+    public function findByDeal(int $dealId): array
+    {
+        return $this->createQueryBuilder('t')
+            ->where('t.deal = :dealId')
+            ->setParameter('dealId', $dealId)
+            ->orderBy('t.dueDate', 'ASC')
+            ->getQuery()
+            ->getResult();
+    }
 }
