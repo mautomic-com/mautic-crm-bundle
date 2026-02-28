@@ -1,0 +1,86 @@
+{# Task inner list #}
+{% if items|length > 0 %}
+    <div class="table-responsive page-list">
+        <table class="table table-hover task-list" id="taskTable">
+            <thead>
+            <tr>
+                {{ include('@MauticCore/Helper/tableheader.html.twig', {
+                    'checkall': 'true',
+                    'target': '#taskTable',
+                }) }}
+
+                {{ include('@MauticCore/Helper/tableheader.html.twig', {
+                    'sessionVar': 'mautomic_crm_task',
+                    'orderBy': 't.title',
+                    'text': 'mautomic_crm.task.title',
+                    'default': true,
+                }) }}
+
+                {{ include('@MauticCore/Helper/tableheader.html.twig', {
+                    'sessionVar': 'mautomic_crm_task',
+                    'orderBy': 't.dueDate',
+                    'text': 'mautomic_crm.task.due_date',
+                    'class': 'visible-md visible-lg',
+                }) }}
+
+                {{ include('@MauticCore/Helper/tableheader.html.twig', {
+                    'sessionVar': 'mautomic_crm_task',
+                    'text': 'mautomic_crm.task.priority',
+                    'class': 'visible-md visible-lg',
+                }) }}
+
+                {{ include('@MauticCore/Helper/tableheader.html.twig', {
+                    'sessionVar': 'mautomic_crm_task',
+                    'text': 'mautomic_crm.task.status',
+                    'class': 'visible-md visible-lg',
+                }) }}
+
+                {{ include('@MauticCore/Helper/tableheader.html.twig', {
+                    'sessionVar': 'mautomic_crm_task',
+                    'orderBy': 't.id',
+                    'text': 'mautic.core.id',
+                    'class': 'visible-md visible-lg',
+                }) }}
+            </tr>
+            </thead>
+            <tbody>
+            {% for item in items %}
+                <tr>
+                    <td>
+                        {{ include('@MauticCore/Helper/list_actions.html.twig', {
+                            'item': item,
+                            'templateButtons': {
+                                'edit': securityHasEntityAccess(permissions['mautomic_crm:tasks:editown'], permissions['mautomic_crm:tasks:editother'], item.createdBy),
+                                'delete': securityHasEntityAccess(permissions['mautomic_crm:tasks:deleteown'], permissions['mautomic_crm:tasks:deleteother'], item.createdBy),
+                            },
+                            'routeBase': 'mautic_mautomic_crm_task',
+                        }) }}
+                    </td>
+                    <td>
+                        <a data-toggle="ajax" href="{{ path('mautic_mautomic_crm_task_action', {'objectId': item.id, 'objectAction': 'view'}) }}">
+                            {{ item.title }}
+                        </a>
+                    </td>
+                    <td class="visible-md visible-lg">
+                        {% if item.dueDate %}{{ item.dueDate|date('Y-m-d H:i') }}{% endif %}
+                    </td>
+                    <td class="visible-md visible-lg">{{ ('mautomic_crm.task.priority.' ~ item.priority)|trans }}</td>
+                    <td class="visible-md visible-lg">{{ ('mautomic_crm.task.status.' ~ item.status)|trans }}</td>
+                    <td class="visible-md visible-lg">{{ item.id }}</td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <div class="panel-footer">
+        {{ include('@MauticCore/Helper/pagination.html.twig', {
+            'totalItems': items|length,
+            'page': page,
+            'limit': limit,
+            'baseUrl': path('mautic_mautomic_crm_task_index'),
+            'sessionVar': 'mautomic_crm_task',
+        }) }}
+    </div>
+{% else %}
+    {{ include('@MauticCore/Helper/noresults.html.twig', {'tip': 'mautomic_crm.task.noresults.tip'}) }}
+{% endif %}

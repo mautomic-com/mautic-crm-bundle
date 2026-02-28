@@ -1,0 +1,25 @@
+{
+    "name": "mautomic/mautic-crm-bundle",
+    "description": "HubSpot-style CRM for Mautic - deals, pipelines, tasks, and notes",
+    "type": "mautic-plugin",
+    "license": "GPL-3.0-or-later",
+    "keywords": [
+        "mautic",
+        "plugin",
+        "crm",
+        "deals",
+        "pipeline"
+    ],
+    "extra": {
+        "install-directory-name": "MautomicCrmBundle"
+    },
+    "minimum-stability": "dev",
+    "require": {
+        "mautic/core-lib": "^7.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "MauticPlugin\\MautomicCrmBundle\\": ""
+        }
+    }
+}

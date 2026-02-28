@@ -1,0 +1,42 @@
+{% extends '@MauticCore/Default/content.html.twig' %}
+
+{% block mauticContent %}mautomic_crm_deal{% endblock %}
+
+{% block headerTitle %}
+  {% if entity.id %}
+    {{ 'mautomic_crm.deal.edit'|trans({'%name%': entity.name|trans}) }}
+  {% else %}
+    {{ 'mautomic_crm.deal.new'|trans }}
+  {% endif %}
+{% endblock %}
+
+{% block content %}
+  {{ form_start(form) }}
+    <div class="box-layout">
+        <div class="col-md-9 height-auto bdr-r pa-md">
+            <div class="row">
+                <div class="col-md-6">{{ form_row(form.name) }}</div>
+                <div class="col-md-3">{{ form_row(form.amount) }}</div>
+                <div class="col-md-3">{{ form_row(form.currency) }}</div>
+            </div>
+            <div class="row">
+                <div class="col-md-12">{{ form_row(form.description) }}</div>
+            </div>
+            <div class="row">
+                <div class="col-md-6">{{ form_row(form.pipeline) }}</div>
+                <div class="col-md-6">{{ form_row(form.stage) }}</div>
+            </div>
+            <div class="row">
+                <div class="col-md-4">{{ form_row(form.closeDate) }}</div>
+                <div class="col-md-4">{{ form_row(form.owner) }}</div>
+                <div class="col-md-4">{{ form_row(form.category) }}</div>
+            </div>
+        </div>
+        <div class="col-md-3 height-auto">
+            <div class="pr-lg pl-lg pt-md pb-md">
+                {{ form_row(form.isPublished) }}
+            </div>
+        </div>
+    </div>
+  {{ form_end(form) }}
+{% endblock %}

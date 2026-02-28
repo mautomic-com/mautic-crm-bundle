@@ -1,0 +1,76 @@
+{# Pipeline inner list #}
+{% if items|length > 0 %}
+    <div class="table-responsive page-list">
+        <table class="table table-hover pipeline-list" id="pipelineTable">
+            <thead>
+            <tr>
+                {{ include('@MauticCore/Helper/tableheader.html.twig', {
+                    'checkall': 'true',
+                    'target': '#pipelineTable',
+                }) }}
+
+                {{ include('@MauticCore/Helper/tableheader.html.twig', {
+                    'sessionVar': 'mautomic_crm_pipeline',
+                    'orderBy': 'p.name',
+                    'text': 'mautic.core.name',
+                    'default': true,
+                }) }}
+
+                {{ include('@MauticCore/Helper/tableheader.html.twig', {
+                    'sessionVar': 'mautomic_crm_pipeline',
+                    'text': 'mautomic_crm.pipeline.is_default',
+                    'class': 'visible-md visible-lg',
+                }) }}
+
+                {{ include('@MauticCore/Helper/tableheader.html.twig', {
+                    'sessionVar': 'mautomic_crm_pipeline',
+                    'orderBy': 'p.id',
+                    'text': 'mautic.core.id',
+                    'class': 'visible-md visible-lg',
+                }) }}
+            </tr>
+            </thead>
+            <tbody>
+            {% for item in items %}
+                <tr>
+                    <td>
+                        {{ include('@MauticCore/Helper/list_actions.html.twig', {
+                            'item': item,
+                            'templateButtons': {
+                                'edit': permissions['mautomic_crm:pipelines:edit'],
+                                'delete': permissions['mautomic_crm:pipelines:delete'],
+                            },
+                            'routeBase': 'mautic_mautomic_crm_pipeline',
+                        }) }}
+                    </td>
+                    <td>
+                        <div>
+                            {{ include('@MauticCore/Helper/publishstatus_icon.html.twig', {'item': item, 'model': 'mautomic_crm.pipeline'}) }}
+                            <a data-toggle="ajax" href="{{ path('mautic_mautomic_crm_pipeline_action', {'objectId': item.id, 'objectAction': 'view'}) }}">
+                                {{ item.name }}
+                            </a>
+                        </div>
+                    </td>
+                    <td class="visible-md visible-lg">
+                        {% if item.isDefault %}
+                            <span class="label label-success">{{ 'mautic.core.yes'|trans }}</span>
+                        {% endif %}
+                    </td>
+                    <td class="visible-md visible-lg">{{ item.id }}</td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <div class="panel-footer">
+        {{ include('@MauticCore/Helper/pagination.html.twig', {
+            'totalItems': items|length,
+            'page': page,
+            'limit': limit,
+            'baseUrl': path('mautic_mautomic_crm_pipeline_index'),
+            'sessionVar': 'mautomic_crm_pipeline',
+        }) }}
+    </div>
+{% else %}
+    {{ include('@MauticCore/Helper/noresults.html.twig', {'tip': 'mautomic_crm.pipeline.noresults.tip'}) }}
+{% endif %}

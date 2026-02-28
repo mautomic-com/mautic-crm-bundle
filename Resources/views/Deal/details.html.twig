@@ -1,0 +1,107 @@
+{% extends '@MauticCore/Default/content.html.twig' %}
+
+{% block mauticContent %}mautomic_crm_deal{% endblock %}
+
+{% block headerTitle %}{{ item.name }}{% endblock %}
+
+{% block publishStatus %}
+    {{- include('@MauticCore/Helper/publishstatus_badge.html.twig', {'entity' : item}) -}}
+{% endblock %}
+
+{% block preHeader %}
+    {{- include('@MauticCore/Helper/page_actions.html.twig', {
+        'item': item,
+        'templateButtons': {
+            'close': securityIsGranted('mautomic_crm:deals:view'),
+        },
+        'routeBase': 'mautomic_crm_deal',
+        'targetLabel': 'mautomic_crm.deal.list'|trans,
+    }) -}}
+{% endblock %}
+
+{% block actions %}
+    {{- include('@MauticCore/Helper/page_actions.html.twig', {
+        'item': item,
+        'templateButtons': {
+            'edit': securityHasEntityAccess(permissions['mautomic_crm:deals:editown'], permissions['mautomic_crm:deals:editother'], item.createdBy),
+            'clone': permissions['mautomic_crm:deals:create'],
+            'delete': securityHasEntityAccess(permissions['mautomic_crm:deals:deleteown'], permissions['mautomic_crm:deals:deleteother'], item.createdBy),
+        },
+        'routeBase': 'mautic_mautomic_crm_deal',
+        'langVar': 'mautomic_crm.deal',
+    }) -}}
+{% endblock %}
+
+{% block content %}
+  <div class="box-layout">
+      <div class="col-md-9 height-auto">
+          <div>
+              {% include '@MauticCore/Helper/description--expanded.html.twig' with {'description': item.description} %}
+
+              <div class="collapse pr-md pl-md" id="deal-details">
+                  <div class="pr-md pl-md pb-md">
+                      <div class="panel shd-none mb-0">
+                          <table class="table table-hover mb-0" data-view-table data-entity-id="{{ item.id }}">
+                              <tbody>
+                              {{ include('@MauticCore/Helper/details.html.twig', {'entity': item}) }}
+                              <tr>
+                                  <td width="20%"><span class="fw-b">{{ 'mautomic_crm.deal.amount'|trans }}</span></td>
+                                  <td>{% if item.amount %}{{ item.amount }} {{ item.currency }}{% else %}-{% endif %}</td>
+                              </tr>
+                              <tr>
+                                  <td width="20%"><span class="fw-b">{{ 'mautomic_crm.deal.pipeline'|trans }}</span></td>
+                                  <td>{% if item.pipeline %}{{ item.pipeline.name }}{% else %}-{% endif %}</td>
+                              </tr>
+                              <tr>
+                                  <td width="20%"><span class="fw-b">{{ 'mautomic_crm.deal.stage'|trans }}</span></td>
+                                  <td>{% if item.stage %}{{ item.stage.name }}{% else %}-{% endif %}</td>
+                              </tr>
+                              <tr>
+                                  <td width="20%"><span class="fw-b">{{ 'mautomic_crm.deal.close_date'|trans }}</span></td>
+                                  <td>{% if item.closeDate %}{{ item.closeDate|date('Y-m-d') }}{% else %}-{% endif %}</td>
+                              </tr>
+                              <tr>
+                                  <td width="20%"><span class="fw-b">{{ 'mautomic_crm.deal.owner'|trans }}</span></td>
+                                  <td>{% if item.owner %}{{ item.owner.name }}{% else %}-{% endif %}</td>
+                              </tr>
+                              <tr>
+                                  <td width="20%"><span class="fw-b">{{ 'mautomic_crm.deal.contact'|trans }}</span></td>
+                                  <td>{% if item.contact %}
+                                      <a data-toggle="ajax" href="{{ path('mautic_contact_action', {'objectAction': 'view', 'objectId': item.contact.id}) }}">
+                                          {{ item.contact.name }}
+                                      </a>
+                                  {% else %}-{% endif %}</td>
+                              </tr>
+                              <tr>
+                                  <td width="20%"><span class="fw-b">{{ 'mautomic_crm.deal.company'|trans }}</span></td>
+                                  <td>{% if item.company %}
+                                      <a data-toggle="ajax" href="{{ path('mautic_company_action', {'objectAction': 'view', 'objectId': item.company.id}) }}">
+                                          {{ item.company.name }}
+                                      </a>
+                                  {% else %}-{% endif %}</td>
+                              </tr>
+                              </tbody>
+                          </table>
+                      </div>
+                  </div>
+              </div>
+          </div>
+
+          <div>
+              <div class="hr-expand nm">
+                  <span data-toggle="tooltip" title="{{ 'mautic.core.details'|trans }}">
+                      <a href="javascript:void(0)" class="arrow text-secondary collapsed" data-toggle="collapse" data-target="#deal-details"><span class="caret"></span>
+                        {{ 'mautic.core.details'|trans }}
+                      </a>
+                  </span>
+              </div>
+          </div>
+      </div>
+
+      <div class="col-md-3 bdr-l height-auto">
+          <div class="panel shd-none bdr-rds-0 bdr-w-0 mb-0">
+              {{ include('@MauticCore/Helper/recentactivity.html.twig', {'logs': logs}) }}
+          </div>
+      </div>
+  </div>
+{% endblock %}

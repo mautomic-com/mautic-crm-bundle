@@ -1,0 +1,125 @@
+{% extends '@MauticCore/Default/content.html.twig' %}
+
+{% block mauticContent %}mautomic_crm_pipeline{% endblock %}
+
+{% block headerTitle %}
+  {% if entity.id %}
+    {{ 'mautomic_crm.pipeline.edit'|trans({'%name%': entity.name|trans}) }}
+  {% else %}
+    {{ 'mautomic_crm.pipeline.new'|trans }}
+  {% endif %}
+{% endblock %}
+
+{% block content %}
+  {{ form_start(form) }}
+    <div class="box-layout">
+        <div class="col-md-9 height-auto bdr-r pa-md">
+            <div class="row">
+                <div class="col-md-6">{{ form_row(form.name) }}</div>
+                <div class="col-md-6">{{ form_row(form.isDefault) }}</div>
+            </div>
+            <div class="row">
+                <div class="col-md-12">{{ form_row(form.description) }}</div>
+            </div>
+
+            <hr class="mn" />
+
+            <div class="pa-md">
+                <h4>{{ 'mautomic_crm.pipeline.stages'|trans }}</h4>
+                <div id="pipeline-stages-container"
+                     data-prototype="{{ form_widget(form.stages.vars.prototype)|e('html_attr') }}"
+                     data-index="{{ form.stages|length }}">
+                    <table class="table table-striped" id="stages-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 30%">{{ 'mautomic_crm.stage.name'|trans }}</th>
+                                <th style="width: 15%">{{ 'mautomic_crm.stage.order'|trans }}</th>
+                                <th style="width: 15%">{{ 'mautomic_crm.stage.probability'|trans }}</th>
+                                <th style="width: 20%">{{ 'mautomic_crm.stage.type'|trans }}</th>
+                                <th style="width: 20%"></th>
+                            </tr>
+                        </thead>
+                        <tbody id="stages-list">
+                            {% for stage in form.stages %}
+                                <tr class="stage-row">
+                                    <td>{{ form_widget(stage.name, {'attr': {'class': 'form-control'}}) }}</td>
+                                    <td>{{ form_widget(stage.order, {'attr': {'class': 'form-control'}}) }}</td>
+                                    <td>{{ form_widget(stage.probability, {'attr': {'class': 'form-control'}}) }}</td>
+                                    <td>{{ form_widget(stage.type, {'attr': {'class': 'form-control'}}) }}</td>
+                                    <td>
+                                        <a href="javascript:void(0);" class="btn btn-danger btn-xs remove-stage" onclick="MautomicCrm.removeStage(this);">
+                                            <i class="ri-delete-bin-line"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                    <a href="javascript:void(0);" class="btn btn-primary btn-sm" onclick="MautomicCrm.addStage();">
+                        <i class="ri-add-line"></i> {{ 'mautomic_crm.pipeline.stage.add'|trans }}
+                    </a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 height-auto">
+            <div class="pr-lg pl-lg pt-md pb-md">
+                {{ form_row(form.isPublished) }}
+            </div>
+        </div>
+    </div>
+  {{ form_end(form) }}
+
+  <script>
+      var MautomicCrm = MautomicCrm || {};
+
+      MautomicCrm.addStage = function() {
+          var container = document.getElementById('pipeline-stages-container');
+          var index = parseInt(container.dataset.index);
+          var prototype = container.dataset.prototype;
+          var newRow = prototype.replace(/__name__/g, index);
+
+          var tbody = document.getElementById('stages-list');
+          var tr = document.createElement('tr');
+          tr.className = 'stage-row';
+          tr.innerHTML = '<td>' + MautomicCrm.extractField(newRow, 'name') + '</td>'
+              + '<td>' + MautomicCrm.extractField(newRow, 'order') + '</td>'
+              + '<td>' + MautomicCrm.extractField(newRow, 'probability') + '</td>'
+              + '<td>' + MautomicCrm.extractField(newRow, 'type') + '</td>'
+              + '<td><a href="javascript:void(0);" class="btn btn-danger btn-xs remove-stage" onclick="MautomicCrm.removeStage(this);"><i class="ri-delete-bin-line"></i></a></td>';
+          tbody.appendChild(tr);
+
+          container.dataset.index = index + 1;
+      };
+
+      MautomicCrm.removeStage = function(button) {
+          var row = button.closest('tr');
+          row.parentNode.removeChild(row);
+      };
+
+      MautomicCrm.extractField = function(html, fieldName) {
+          var temp = document.createElement('div');
+          temp.innerHTML = html;
+          var elements = temp.querySelectorAll('[id*="_' + fieldName + '"]');
+          var result = '';
+          for (var i = 0; i < elements.length; i++) {
+              var el = elements[i];
+              if (el.tagName === 'INPUT' || el.tagName === 'SELECT' || el.tagName === 'TEXTAREA') {
+                  el.classList.add('form-control');
+                  result += el.outerHTML;
+              }
+          }
+          if (!result) {
+              var inputs = temp.querySelectorAll('input, select, textarea');
+              for (var j = 0; j < inputs.length; j++) {
+                  var input = inputs[j];
+                  var name = input.getAttribute('name') || '';
+                  if (name.indexOf('[' + fieldName + ']') !== -1) {
+                      input.classList.add('form-control');
+                      result += input.outerHTML;
+                  }
+              }
+          }
+          return result || html;
+      };
+  </script>
+{% endblock %}

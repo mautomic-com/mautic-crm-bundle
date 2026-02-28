@@ -1,0 +1,112 @@
+{# Deal inner list #}
+{% if items|length > 0 %}
+    <div class="table-responsive page-list">
+        <table class="table table-hover deal-list" id="dealTable">
+            <thead>
+            <tr>
+                {{ include('@MauticCore/Helper/tableheader.html.twig', {
+                    'checkall': 'true',
+                    'target': '#dealTable',
+                }) }}
+
+                {{ include('@MauticCore/Helper/tableheader.html.twig', {
+                    'sessionVar': 'mautomic_crm_deal',
+                    'orderBy': 'd.name',
+                    'text': 'mautic.core.name',
+                    'default': true,
+                }) }}
+
+                {{ include('@MauticCore/Helper/tableheader.html.twig', {
+                    'sessionVar': 'mautomic_crm_deal',
+                    'orderBy': 'd.amount',
+                    'text': 'mautomic_crm.deal.amount',
+                    'class': 'visible-md visible-lg',
+                }) }}
+
+                {{ include('@MauticCore/Helper/tableheader.html.twig', {
+                    'sessionVar': 'mautomic_crm_deal',
+                    'text': 'mautomic_crm.deal.pipeline',
+                    'class': 'visible-md visible-lg',
+                }) }}
+
+                {{ include('@MauticCore/Helper/tableheader.html.twig', {
+                    'sessionVar': 'mautomic_crm_deal',
+                    'text': 'mautomic_crm.deal.stage',
+                    'class': 'visible-md visible-lg',
+                }) }}
+
+                {{ include('@MauticCore/Helper/tableheader.html.twig', {
+                    'sessionVar': 'mautomic_crm_deal',
+                    'text': 'mautomic_crm.deal.owner',
+                    'class': 'visible-md visible-lg',
+                }) }}
+
+                {{ include('@MauticCore/Helper/tableheader.html.twig', {
+                    'sessionVar': 'mautomic_crm_deal',
+                    'text': 'mautomic_crm.deal.contact',
+                    'class': 'visible-md visible-lg',
+                }) }}
+
+                {{ include('@MauticCore/Helper/tableheader.html.twig', {
+                    'sessionVar': 'mautomic_crm_deal',
+                    'orderBy': 'd.id',
+                    'text': 'mautic.core.id',
+                    'class': 'visible-md visible-lg',
+                }) }}
+            </tr>
+            </thead>
+            <tbody>
+            {% for item in items %}
+                <tr>
+                    <td>
+                        {{ include('@MauticCore/Helper/list_actions.html.twig', {
+                            'item': item,
+                            'templateButtons': {
+                                'edit': securityHasEntityAccess(permissions['mautomic_crm:deals:editown'], permissions['mautomic_crm:deals:editother'], item.createdBy),
+                                'clone': permissions['mautomic_crm:deals:create'],
+                                'delete': securityHasEntityAccess(permissions['mautomic_crm:deals:deleteown'], permissions['mautomic_crm:deals:deleteother'], item.createdBy),
+                            },
+                            'routeBase': 'mautic_mautomic_crm_deal',
+                        }) }}
+                    </td>
+                    <td>
+                        <div>
+                            {{ include('@MauticCore/Helper/publishstatus_icon.html.twig', {'item': item, 'model': 'mautomic_crm.deal'}) }}
+                            <a data-toggle="ajax" href="{{ path('mautic_mautomic_crm_deal_action', {'objectId': item.id, 'objectAction': 'view'}) }}">
+                                {{ item.name }}
+                            </a>
+                        </div>
+                    </td>
+                    <td class="visible-md visible-lg">
+                        {% if item.amount %}{{ item.amount }} {{ item.currency }}{% endif %}
+                    </td>
+                    <td class="visible-md visible-lg">
+                        {% if item.pipeline %}{{ item.pipeline.name }}{% endif %}
+                    </td>
+                    <td class="visible-md visible-lg">
+                        {% if item.stage %}{{ item.stage.name }}{% endif %}
+                    </td>
+                    <td class="visible-md visible-lg">
+                        {% if item.owner %}{{ item.owner.name }}{% endif %}
+                    </td>
+                    <td class="visible-md visible-lg">
+                        {% if item.contact %}{{ item.contact.name }}{% endif %}
+                    </td>
+                    <td class="visible-md visible-lg">{{ item.id }}</td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <div class="panel-footer">
+        {{ include('@MauticCore/Helper/pagination.html.twig', {
+            'totalItems': items|length,
+            'page': page,
+            'limit': limit,
+            'baseUrl': path('mautic_mautomic_crm_deal_index'),
+            'sessionVar': 'mautomic_crm_deal',
+        }) }}
+    </div>
+{% else %}
+    {{ include('@MauticCore/Helper/noresults.html.twig', {'tip': 'mautomic_crm.deal.noresults.tip'}) }}
+{% endif %}

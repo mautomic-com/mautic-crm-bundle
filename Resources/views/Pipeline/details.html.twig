@@ -1,0 +1,76 @@
+{% extends '@MauticCore/Default/content.html.twig' %}
+
+{% block mauticContent %}mautomic_crm_pipeline{% endblock %}
+
+{% block headerTitle %}{{ item.name }}{% endblock %}
+
+{% block publishStatus %}
+    {{- include('@MauticCore/Helper/publishstatus_badge.html.twig', {'entity' : item}) -}}
+{% endblock %}
+
+{% block preHeader %}
+    {{- include('@MauticCore/Helper/page_actions.html.twig', {
+        'item': item,
+        'templateButtons': {
+            'close': securityIsGranted('mautomic_crm:pipelines:view'),
+        },
+        'routeBase': 'mautomic_crm_pipeline',
+        'targetLabel': 'mautomic_crm.pipeline.list'|trans,
+    }) -}}
+{% endblock %}
+
+{% block actions %}
+    {{- include('@MauticCore/Helper/page_actions.html.twig', {
+        'item': item,
+        'templateButtons': {
+            'edit': permissions['mautomic_crm:pipelines:edit'],
+            'delete': permissions['mautomic_crm:pipelines:delete'],
+        },
+        'routeBase': 'mautic_mautomic_crm_pipeline',
+        'langVar': 'mautomic_crm.pipeline',
+    }) -}}
+{% endblock %}
+
+{% block content %}
+  <div class="box-layout">
+      <div class="col-md-9 height-auto">
+          <div>
+              {% include '@MauticCore/Helper/description--expanded.html.twig' with {'description': item.description} %}
+
+              <div class="pa-md">
+                  <h4>{{ 'mautomic_crm.pipeline.stages'|trans }}</h4>
+                  {% if item.stages|length > 0 %}
+                      <table class="table table-hover">
+                          <thead>
+                              <tr>
+                                  <th>{{ 'mautomic_crm.stage.name'|trans }}</th>
+                                  <th>{{ 'mautomic_crm.stage.order'|trans }}</th>
+                                  <th>{{ 'mautomic_crm.stage.probability'|trans }}</th>
+                                  <th>{{ 'mautomic_crm.stage.type'|trans }}</th>
+                              </tr>
+                          </thead>
+                          <tbody>
+                          {% for stage in item.stages %}
+                              <tr>
+                                  <td>{{ stage.name }}</td>
+                                  <td>{{ stage.order }}</td>
+                                  <td>{{ stage.probability }}%</td>
+                                  <td>{{ ('mautomic_crm.stage.type.' ~ stage.type)|trans }}</td>
+                              </tr>
+                          {% endfor %}
+                          </tbody>
+                      </table>
+                  {% else %}
+                      <p class="text-muted">{{ 'mautomic_crm.pipeline.no_stages'|trans }}</p>
+                  {% endif %}
+              </div>
+          </div>
+      </div>
+
+      <div class="col-md-3 bdr-l height-auto">
+          <div class="panel shd-none bdr-rds-0 bdr-w-0 mb-0">
+              {{ include('@MauticCore/Helper/recentactivity.html.twig', {'logs': logs}) }}
+          </div>
+      </div>
+  </div>
+{% endblock %}

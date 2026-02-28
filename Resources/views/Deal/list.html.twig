@@ -1,0 +1,39 @@
+{# Deal list view #}
+{% set isIndex = 'index' == tmpl ? true : false %}
+{% set tmpl = 'list' %}
+{% extends isIndex ? '@MauticCore/Default/content.html.twig' : '@MauticCore/Default/raw_output.html.twig' %}
+
+{% block mauticContent %}mautomic_crm_deal{% endblock %}
+
+{% block headerTitle %}{{ 'mautomic_crm.deals'|trans }}{% endblock %}
+
+{% block content %}
+  {% if isIndex %}
+    <div id="page-list-wrapper" class="{% if items|length > 0 or searchValue is not empty %}panel {% endif %}panel-default">
+        {{ include('@MauticCore/Helper/list_toolbar.html.twig', {
+            'searchValue': searchValue,
+            'searchHelp': 'mautomic_crm.deal.help.searchcommands',
+            'action': currentRoute,
+            'page_actions': {
+                'templateButtons': {
+                    'new': permissions['mautomic_crm:deals:create'],
+                },
+                'routeBase': 'mautic_mautomic_crm_deal',
+            },
+            'bulk_actions': {
+                'routeBase': 'mautic_mautomic_crm_deal',
+                'templateButtons': {
+                    'delete': permissions['mautomic_crm:deals:delete'],
+                },
+            },
+        }) }}
+        <div class="page-list">
+  {% endif %}
+
+  {{ include('@MautomicCrm/Deal/_list.html.twig') }}
+
+  {% if isIndex %}
+        </div>
+    </div>
+  {% endif %}
+{% endblock %}
