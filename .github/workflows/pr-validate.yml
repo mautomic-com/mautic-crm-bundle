@@ -10,6 +10,11 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  COMPOSER_PROCESS_TIMEOUT: 0
+  COMPOSER_NO_INTERACTION: 1
+  COMPOSER_NO_AUDIT: 1
+
 jobs:
   lint:
     name: "Lint (PHPStan + CS)"
@@ -24,34 +29,37 @@ jobs:
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: "8.3"
+          php-version: "8.2"
           extensions: mbstring, xml, ctype, iconv, intl, pdo_mysql, dom, filter, gd, json, zip
-          tools: composer:v2
-          coverage: none
-
-      - name: Cache Composer
-        uses: actions/cache@v4
-        with:
-          path: ~/.composer/cache
-          key: composer-${{ hashFiles('plugin/composer.json') }}
 
       - name: Clone Mautic
-        run: |
-          git clone --depth 1 --branch 7.x https://github.com/mautic/mautic.git mautic
-          cd mautic && composer install --no-interaction --prefer-dist --no-progress --quiet
+        run: git clone --depth 1 --branch 7.x https://github.com/mautic/mautic.git mautic
 
       - name: Link plugin
+        run: ln -s ${{ github.workspace }}/plugin ${{ github.workspace }}/mautic/plugins/MautomicCrmBundle
+
+      - name: Install dependencies
+        uses: ramsey/composer-install@v3
+        with:
+          working-directory: mautic
+
+      - name: Build test cache for PHPStan
+        working-directory: mautic
+        env:
+          APP_ENV: test
+          APP_DEBUG: 1
         run: |
-          ln -s ${{ github.workspace }}/plugin ${{ github.workspace }}/mautic/plugins/MautomicCrmBundle
-          cd mautic && composer dump-autoload --quiet
+          if [ ! -f var/cache/test/AppKernelTestDebugContainer.xml ]; then
+            php bin/console > /dev/null 2>&1 || true
+          fi
 
       - name: PHPStan (level 6)
         working-directory: mautic
-        run: php vendor/bin/phpstan analyse plugins/MautomicCrmBundle --level=6 --no-progress
+        run: php -d memory_limit=1G bin/phpstan analyse plugins/MautomicCrmBundle --level=6 --no-progress
 
       - name: Coding Standards
         working-directory: mautic
-        run: php vendor/bin/php-cs-fixer fix plugins/MautomicCrmBundle --dry-run --diff --config=.php-cs-fixer.php
+        run: bin/php-cs-fixer fix plugins/MautomicCrmBundle --dry-run --diff --config=.php-cs-fixer.php --using-cache=no
 
   unit-tests:
     name: "Unit Tests"
@@ -66,26 +74,19 @@ jobs:
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: "8.3"
+          php-version: "8.2"
           extensions: mbstring, xml, ctype, iconv, intl, pdo_mysql, dom, filter, gd, json, zip
-          tools: composer:v2
-          coverage: none
-
-      - name: Cache Composer
-        uses: actions/cache@v4
-        with:
-          path: ~/.composer/cache
-          key: composer-${{ hashFiles('plugin/composer.json') }}
 
       - name: Clone Mautic
-        run: |
-          git clone --depth 1 --branch 7.x https://github.com/mautic/mautic.git mautic
-          cd mautic && composer install --no-interaction --prefer-dist --no-progress --quiet
+        run: git clone --depth 1 --branch 7.x https://github.com/mautic/mautic.git mautic
 
       - name: Link plugin
-        run: |
-          ln -s ${{ github.workspace }}/plugin ${{ github.workspace }}/mautic/plugins/MautomicCrmBundle
-          cd mautic && composer dump-autoload --quiet
+        run: ln -s ${{ github.workspace }}/plugin ${{ github.workspace }}/mautic/plugins/MautomicCrmBundle
+
+      - name: Install dependencies
+        uses: ramsey/composer-install@v3
+        with:
+          working-directory: mautic
 
       - name: Run unit tests
         working-directory: mautic
@@ -96,16 +97,16 @@ jobs:
     runs-on: ubuntu-latest
 
     services:
-      mysql:
+      database:
         image: mysql:8.4
         env:
-          MYSQL_ROOT_PASSWORD: mautic
-          MYSQL_DATABASE: mautic_test
-          MYSQL_USER: mautic
-          MYSQL_PASSWORD: mautic
+          MYSQL_ALLOW_EMPTY_PASSWORD: yes
+          MYSQL_DATABASE: mautictest
         ports:
-          - 3306:3306
+          - 3306
         options: >-
+          --shm-size=2gb
+          --tmpfs=/var/lib/mysql
           --health-cmd="mysqladmin ping --silent"
           --health-interval=10s
           --health-timeout=5s
@@ -120,60 +121,29 @@ jobs:
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: "8.3"
+          php-version: "8.2"
           extensions: mbstring, xml, ctype, iconv, intl, pdo_mysql, dom, filter, gd, json, zip
-          tools: composer:v2
-          coverage: none
-
-      - name: Cache Composer
-        uses: actions/cache@v4
-        with:
-          path: ~/.composer/cache
-          key: composer-${{ hashFiles('plugin/composer.json') }}
 
       - name: Clone Mautic
-        run: |
-          git clone --depth 1 --branch 7.x https://github.com/mautic/mautic.git mautic
-          cd mautic && composer install --no-interaction --prefer-dist --no-progress --quiet
+        run: git clone --depth 1 --branch 7.x https://github.com/mautic/mautic.git mautic
 
       - name: Link plugin
-        run: |
-          ln -s ${{ github.workspace }}/plugin ${{ github.workspace }}/mautic/plugins/MautomicCrmBundle
-          cd mautic && composer dump-autoload --quiet
+        run: ln -s ${{ github.workspace }}/plugin ${{ github.workspace }}/mautic/plugins/MautomicCrmBundle
 
-      - name: Configure Mautic for test DB
-        working-directory: mautic
-        run: |
-          cat > config/local.php << 'LOCALPHP'
-          <?php
-          $parameters = [
-              'db_driver'   => 'pdo_mysql',
-              'db_host'     => '127.0.0.1',
-              'db_port'     => 3306,
-              'db_name'     => 'mautic_test',
-              'db_user'     => 'root',
-              'db_password' => 'mautic',
-              'db_table_prefix' => '',
-              'site_url'    => 'http://localhost',
-              'secret_key'  => 'ci_test_secret_key_not_for_production',
-          ];
-          LOCALPHP
-
-      - name: Install Mautic schema
-        working-directory: mautic
-        env:
-          APP_ENV: test
-          APP_DEBUG: 1
-        run: |
-          php bin/console mautic:install http://localhost --force --no-interaction
-          php bin/console cache:clear --env=test --no-warmup
-          php bin/console cache:warmup --env=test
+      - name: Install dependencies
+        uses: ramsey/composer-install@v3
+        with:
+          working-directory: mautic
 
       - name: Run functional tests
         working-directory: mautic
         env:
-          APP_ENV: test
-        run: php bin/phpunit -c app/phpunit.xml.dist plugins/MautomicCrmBundle/Tests/Functional/ --testdox
+          SYMFONY_ENV: test
+          MAUTIC_ENV: test
+          DB_PORT: ${{ job.services.database.ports[3306] }}
+        run: |
+          rm -rf var/cache
+          php -d zend.assertions=1 bin/phpunit -d memory_limit=1G --bootstrap vendor/autoload.php --configuration app/phpunit.xml.dist plugins/MautomicCrmBundle/Tests/Functional/ --testdox
 
   architecture:
     name: "Architecture Validation"
@@ -185,23 +155,18 @@ jobs:
 
       - name: Validate architecture
         run: |
-          # Check bundle class
           grep -q 'extends PluginBundleBase' MautomicCrmBundle.php || { echo "FAIL: Bundle must extend PluginBundleBase"; exit 1; }
-          
-          # Check composer type
+
           grep -q '"type": "mautic-plugin"' composer.json || { echo "FAIL: composer.json type must be mautic-plugin"; exit 1; }
-          
-          # Check config files
+
           test -f Config/config.php || { echo "FAIL: Config/config.php missing"; exit 1; }
           test -f Config/services.php || { echo "FAIL: Config/services.php missing"; exit 1; }
-          
-          # Check entities have loadMetadata
+
           for f in Entity/*.php; do
             case "$f" in *Repository.php) continue;; esac
             grep -q 'function loadMetadata' "$f" || { echo "FAIL: $f missing loadMetadata()"; exit 1; }
           done
-          
-          # Check translations
+
           test -f Translations/en_US/messages.ini || { echo "FAIL: translations missing"; exit 1; }
-          
+
           echo "All architecture checks passed"
