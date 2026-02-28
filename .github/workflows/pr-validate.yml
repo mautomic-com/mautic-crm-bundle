@@ -1,0 +1,207 @@
+name: PR Validation
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    name: "Lint (PHPStan + CS)"
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout plugin
+        uses: actions/checkout@v4
+        with:
+          path: plugin
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.3"
+          extensions: mbstring, xml, ctype, iconv, intl, pdo_mysql, dom, filter, gd, json, zip
+          tools: composer:v2
+          coverage: none
+
+      - name: Cache Composer
+        uses: actions/cache@v4
+        with:
+          path: ~/.composer/cache
+          key: composer-${{ hashFiles('plugin/composer.json') }}
+
+      - name: Clone Mautic
+        run: |
+          git clone --depth 1 --branch 7.x https://github.com/mautic/mautic.git mautic
+          cd mautic && composer install --no-interaction --prefer-dist --no-progress --quiet
+
+      - name: Link plugin
+        run: |
+          ln -s ${{ github.workspace }}/plugin ${{ github.workspace }}/mautic/plugins/MautomicCrmBundle
+          cd mautic && composer dump-autoload --quiet
+
+      - name: PHPStan (level 6)
+        working-directory: mautic
+        run: php vendor/bin/phpstan analyse plugins/MautomicCrmBundle --level=6 --no-progress
+
+      - name: Coding Standards
+        working-directory: mautic
+        run: php vendor/bin/php-cs-fixer fix plugins/MautomicCrmBundle --dry-run --diff --config=.php-cs-fixer.php
+
+  unit-tests:
+    name: "Unit Tests"
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout plugin
+        uses: actions/checkout@v4
+        with:
+          path: plugin
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.3"
+          extensions: mbstring, xml, ctype, iconv, intl, pdo_mysql, dom, filter, gd, json, zip
+          tools: composer:v2
+          coverage: none
+
+      - name: Cache Composer
+        uses: actions/cache@v4
+        with:
+          path: ~/.composer/cache
+          key: composer-${{ hashFiles('plugin/composer.json') }}
+
+      - name: Clone Mautic
+        run: |
+          git clone --depth 1 --branch 7.x https://github.com/mautic/mautic.git mautic
+          cd mautic && composer install --no-interaction --prefer-dist --no-progress --quiet
+
+      - name: Link plugin
+        run: |
+          ln -s ${{ github.workspace }}/plugin ${{ github.workspace }}/mautic/plugins/MautomicCrmBundle
+          cd mautic && composer dump-autoload --quiet
+
+      - name: Run unit tests
+        working-directory: mautic
+        run: php bin/phpunit plugins/MautomicCrmBundle/Tests/Unit/ --testdox
+
+  functional-tests:
+    name: "Functional Tests"
+    runs-on: ubuntu-latest
+
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ROOT_PASSWORD: mautic
+          MYSQL_DATABASE: mautic_test
+          MYSQL_USER: mautic
+          MYSQL_PASSWORD: mautic
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping --silent"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+    steps:
+      - name: Checkout plugin
+        uses: actions/checkout@v4
+        with:
+          path: plugin
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.3"
+          extensions: mbstring, xml, ctype, iconv, intl, pdo_mysql, dom, filter, gd, json, zip
+          tools: composer:v2
+          coverage: none
+
+      - name: Cache Composer
+        uses: actions/cache@v4
+        with:
+          path: ~/.composer/cache
+          key: composer-${{ hashFiles('plugin/composer.json') }}
+
+      - name: Clone Mautic
+        run: |
+          git clone --depth 1 --branch 7.x https://github.com/mautic/mautic.git mautic
+          cd mautic && composer install --no-interaction --prefer-dist --no-progress --quiet
+
+      - name: Link plugin
+        run: |
+          ln -s ${{ github.workspace }}/plugin ${{ github.workspace }}/mautic/plugins/MautomicCrmBundle
+          cd mautic && composer dump-autoload --quiet
+
+      - name: Configure Mautic for test DB
+        working-directory: mautic
+        run: |
+          cat > config/local.php << 'LOCALPHP'
+          <?php
+          $parameters = [
+              'db_driver'   => 'pdo_mysql',
+              'db_host'     => '127.0.0.1',
+              'db_port'     => 3306,
+              'db_name'     => 'mautic_test',
+              'db_user'     => 'root',
+              'db_password' => 'mautic',
+              'db_table_prefix' => '',
+              'site_url'    => 'http://localhost',
+              'secret_key'  => 'ci_test_secret_key_not_for_production',
+          ];
+          LOCALPHP
+
+      - name: Install Mautic schema
+        working-directory: mautic
+        env:
+          APP_ENV: test
+          APP_DEBUG: 1
+        run: |
+          php bin/console mautic:install http://localhost --force --no-interaction
+          php bin/console cache:clear --env=test --no-warmup
+          php bin/console cache:warmup --env=test
+
+      - name: Run functional tests
+        working-directory: mautic
+        env:
+          APP_ENV: test
+        run: php bin/phpunit -c app/phpunit.xml.dist plugins/MautomicCrmBundle/Tests/Functional/ --testdox
+
+  architecture:
+    name: "Architecture Validation"
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout plugin
+        uses: actions/checkout@v4
+
+      - name: Validate architecture
+        run: |
+          # Check bundle class
+          grep -q 'extends PluginBundleBase' MautomicCrmBundle.php || { echo "FAIL: Bundle must extend PluginBundleBase"; exit 1; }
+          
+          # Check composer type
+          grep -q '"type": "mautic-plugin"' composer.json || { echo "FAIL: composer.json type must be mautic-plugin"; exit 1; }
+          
+          # Check config files
+          test -f Config/config.php || { echo "FAIL: Config/config.php missing"; exit 1; }
+          test -f Config/services.php || { echo "FAIL: Config/services.php missing"; exit 1; }
+          
+          # Check entities have loadMetadata
+          for f in Entity/*.php; do
+            case "$f" in *Repository.php) continue;; esac
+            grep -q 'function loadMetadata' "$f" || { echo "FAIL: $f missing loadMetadata()"; exit 1; }
+          done
+          
+          # Check translations
+          test -f Translations/en_US/messages.ini || { echo "FAIL: translations missing"; exit 1; }
+          
+          echo "All architecture checks passed"
