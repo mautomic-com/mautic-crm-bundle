@@ -60,6 +60,59 @@ Login: `https://mautic-001.ddev.site` — credentials: `admin` / `Maut1cR0cks!`
 Use Cursor IDE browser MCP or browser-use subagent to verify UI flows.
 Every feature spec lists specific browser smoke tests that MUST pass.
 
+### Browser Testing Recipes (follow these exactly to avoid retries)
+
+**1. After EVERY navigation, hide the Symfony debug toolbar — it blocks clicks:**
+```
+browser_navigate → url: javascript:void(document.querySelector('.sf-toolbar')&&(document.querySelector('.sf-toolbar').style.display='none'))
+```
+
+**2. Navigate directly to URLs instead of clicking through menus:**
+```
+Pipelines list:  https://mautic-001.ddev.site/s/mautomic/pipelines
+Pipeline detail: https://mautic-001.ddev.site/s/mautomic/pipelines/view/{id}
+Pipeline edit:   https://mautic-001.ddev.site/s/mautomic/pipelines/edit/{id}
+Deals list:      https://mautic-001.ddev.site/s/mautomic/deals
+Deal new:        https://mautic-001.ddev.site/s/mautomic/deals/new
+Deal detail:     https://mautic-001.ddev.site/s/mautomic/deals/view/{id}
+Deal edit:       https://mautic-001.ddev.site/s/mautomic/deals/edit/{id}
+Tasks list:      https://mautic-001.ddev.site/s/mautomic/tasks
+Task new:        https://mautic-001.ddev.site/s/mautomic/tasks/new
+Task detail:     https://mautic-001.ddev.site/s/mautomic/tasks/view/{id}
+```
+
+**3. Submit Mautic forms via JS (Save & Close dropdown is unreliable via accessibility refs):**
+```
+browser_navigate → url: javascript:void(document.querySelector('form')?.submit())
+```
+
+**4. Use compact interactive snapshots to reduce noise:**
+```
+browser_snapshot → interactive: true, compact: true
+```
+
+**5. To verify text content exists on a page**, take a screenshot (visual check) or grep the snapshot file:
+```
+browser_take_screenshot
+```
+
+**6. For dropdown menus (Options → Delete)**, click the dropdown button, then immediately take a fresh snapshot to get new refs. Dropdown item refs go stale quickly.
+
+**7. Resize browser to avoid overlap issues:**
+```
+browser_resize → width: 1280, height: 1024
+```
+
+**8. Recommended flow for each smoke test:**
+```
+browser_navigate (to URL)
+browser_navigate (hide toolbar JS)
+browser_snapshot (interactive, compact)
+browser_fill / browser_click (interact)
+browser_navigate (form submit JS) — if saving a form
+browser_take_screenshot — verify result
+```
+
 ## Plugin Architecture
 
 ```
@@ -105,6 +158,7 @@ MautomicCrmBundle/
 | Pipeline/Stage on Deal | DB columns NOT NULL. Default in `DealModel::getEntity()`, enforce in `saveEntity()`. |
 | Cache after entity changes | Clear test cache: `ddev exec rm -rf var/cache/test` |
 | Functional test config | Use `-c app/phpunit.xml.dist` for KERNEL_CLASS env var. |
+| PHPStan needs cache | Build first: `ddev exec bash -c 'APP_ENV=test APP_DEBUG=1 php bin/console > /dev/null 2>&1'` |
 | Mautic 7 patterns | When in doubt, look at `app/bundles/LeadBundle/` or `app/bundles/EmailBundle/` for reference. |
 
 ## Coding Standards
