@@ -109,17 +109,20 @@ return [
                 'parent'   => 'mautomic_crm.crm',
                 'priority' => 20,
             ],
-            'mautomic_crm.deal_fields' => [
-                'route'    => 'mautic_mautomic_crm_deal_field_index',
-                'access'   => 'mautomic_crm:deals:view',
-                'parent'   => 'mautomic_crm.crm',
-                'priority' => 15,
-            ],
             'mautomic_crm.tasks' => [
                 'route'    => 'mautic_mautomic_crm_task_index',
                 'access'   => 'mautomic_crm:tasks:view',
                 'parent'   => 'mautomic_crm.crm',
                 'priority' => 30,
+            ],
+        ],
+        'admin' => [
+            'mautomic_crm.deal_field.list' => [
+                'id'        => 'mautomic_crm_deal_fields',
+                'iconClass' => 'ri-input-field',
+                'route'     => 'mautic_mautomic_crm_deal_field_index',
+                'access'    => 'mautomic_crm:deals:view',
+                'priority'  => 18,
             ],
         ],
     ],
