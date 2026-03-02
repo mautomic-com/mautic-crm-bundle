@@ -12,10 +12,13 @@ use Mautic\CoreBundle\Helper\AppVersion;
 use Mautic\CoreBundle\Helper\CoreParametersHelper;
 use Mautic\CoreBundle\Security\Permissions\CorePermissions;
 use Mautic\CoreBundle\Translation\Translator;
+use Mautic\UserBundle\Entity\User;
 use MauticPlugin\MautomicCrmBundle\Entity\Task;
 use MauticPlugin\MautomicCrmBundle\Model\TaskModel;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\Form\FormFactoryInterface;
+use Symfony\Component\Form\FormInterface;
+use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\Routing\RouterInterface;
 
@@ -47,5 +50,56 @@ class TaskApiController extends CommonApiController
         $this->permissionBase  = 'mautomic_crm:tasks';
 
         parent::__construct($security, $translator, $entityResultHelper, $router, $formFactory, $appVersion, $requestStack, $doctrine, $modelFactory, $dispatcher, $coreParametersHelper);
+    }
+
+    /**
+     * @param Task $entity
+     */
+    protected function createEntityForm($entity): FormInterface
+    {
+        $form = parent::createEntityForm($entity);
+
+        $form->remove('owner');
+
+        return $form;
+    }
+
+    /**
+     * @param array<string, mixed> $parameters
+     * @param Task                 $entity
+     * @param string               $action
+     *
+     * @return array<string, mixed>
+     */
+    protected function prepareParametersForBinding(Request $request, $parameters, $entity, $action): array
+    {
+        if (!array_key_exists('deal', $parameters) && $entity->getDeal()) {
+            $parameters['deal'] = $entity->getDeal()->getId();
+        }
+
+        if (!array_key_exists('contact', $parameters) && $entity->getContact()) {
+            $parameters['contact'] = $entity->getContact()->getId();
+        }
+
+        unset($parameters['owner']);
+
+        return $parameters;
+    }
+
+    /**
+     * @param Task                 $entity
+     * @param FormInterface<Task>  $form
+     * @param array<string, mixed> $parameters
+     * @param string               $action
+     */
+    protected function preSaveEntity(&$entity, $form, $parameters, $action = 'edit'): void
+    {
+        if (!empty($this->entityRequestParameters['owner'])) {
+            $ownerId = (int) $this->entityRequestParameters['owner'];
+            $em      = $this->doctrine->getManager();
+            \assert($em instanceof \Doctrine\ORM\EntityManagerInterface);
+            $owner = $em->getReference(User::class, $ownerId);
+            $entity->setOwner($owner);
+        }
     }
 }
