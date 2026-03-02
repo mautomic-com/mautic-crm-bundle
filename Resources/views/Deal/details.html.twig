@@ -134,6 +134,52 @@
                   </div>
               {% endif %}
           </div>
+
+          <div class="pa-md">
+              <h4>
+                  {{ 'mautomic_crm.deal.notes'|trans }}
+                  <a class="btn btn-primary btn-xs pull-right" href="{{ path('mautic_mautomic_crm_note_action', {'objectAction': 'new', 'dealId': item.id}) }}">
+                      <i class="ri-add-line"></i> {{ 'mautomic_crm.note.add'|trans }}
+                  </a>
+              </h4>
+              {% if notes is defined and notes|length > 0 %}
+                  <div class="mt-sm">
+                      {% for note in notes %}
+                          {% set noteTypeIcons = {
+                              'general': 'ri-chat-1-line',
+                              'call': 'ri-phone-line',
+                              'meeting': 'ri-team-line',
+                              'email': 'ri-mail-line'
+                          } %}
+                          <div class="panel panel-default mb-sm">
+                              <div class="panel-body">
+                                  <div class="pull-right">
+                                      <a class="btn btn-default btn-xs" href="{{ path('mautic_mautomic_crm_note_action', {'objectAction': 'edit', 'objectId': note.id, 'dealId': item.id}) }}">
+                                          <i class="ri-pencil-line"></i>
+                                      </a>
+                                      <a class="btn btn-danger btn-xs" href="{{ path('mautic_mautomic_crm_note_action', {'objectAction': 'delete', 'objectId': note.id, 'dealId': item.id}) }}" data-toggle="confirmation" data-message="{{ 'mautomic_crm.note.confirmdelete'|trans }}">
+                                          <i class="ri-delete-bin-line"></i>
+                                      </a>
+                                  </div>
+                                  <div>
+                                      <i class="{{ noteTypeIcons[note.type] ?? 'ri-chat-1-line' }} note-type-icon"></i>
+                                      <strong>{{ ('mautomic_crm.note.type.' ~ note.type)|trans }}</strong>
+                                      <span class="text-muted ml-sm">
+                                          {% if note.createdByUser %}{{ note.createdByUser }}{% endif %}
+                                          {% if note.dateAdded %} &middot; {{ note.dateAdded|date('Y-m-d H:i') }}{% endif %}
+                                      </span>
+                                  </div>
+                                  <div class="mt-xs">{{ note.text|nl2br }}</div>
+                              </div>
+                          </div>
+                      {% endfor %}
+                  </div>
+              {% else %}
+                  <div class="alert alert-info">
+                      {{ 'mautomic_crm.deal.notes.empty'|trans }}
+                  </div>
+              {% endif %}
+          </div>
       </div>
 
       <div class="col-md-3 bdr-l height-auto">

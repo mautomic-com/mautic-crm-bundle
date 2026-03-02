@@ -26,6 +26,12 @@ class DealController extends AbstractStandardFormController
                 /** @var \MauticPlugin\MautomicCrmBundle\Entity\TaskRepository $taskRepo */
                 $taskRepo                        = $this->getModel('mautomic_crm.task')->getRepository();
                 $args['viewParameters']['tasks'] = $taskRepo->findByDeal((int) $entity->getId());
+
+                /** @var \MauticPlugin\MautomicCrmBundle\Entity\NoteRepository $noteRepo */
+                $noteRepo                        = $this->getModel('mautomic_crm.note')->getRepository();
+                /** @var \MauticPlugin\MautomicCrmBundle\Entity\Deal $entity */
+                $contactId                       = null !== $entity->getContact() ? (int) $entity->getContact()->getId() : null;
+                $args['viewParameters']['notes'] = $noteRepo->findByDeal((int) $entity->getId(), $contactId);
             }
         }
 

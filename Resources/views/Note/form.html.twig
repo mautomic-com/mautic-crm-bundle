@@ -1,0 +1,28 @@
+{% extends '@MauticCore/Default/content.html.twig' %}
+
+{% block mauticContent %}mautomic_crm_note{% endblock %}
+
+{% block headerTitle %}
+  {% if entity.id %}
+    {{ 'mautomic_crm.note.edit'|trans({'%name%': entity.name|trans}) }}
+  {% else %}
+    {{ 'mautomic_crm.note.new'|trans }}
+  {% endif %}
+{% endblock %}
+
+{% block content %}
+  {{ form_start(form) }}
+    <div class="box-layout">
+        <div class="col-md-12 height-auto pa-md">
+            <div class="row">
+                <div class="col-md-12">{{ form_row(form.text) }}</div>
+            </div>
+            <div class="row">
+                <div class="col-md-4">{{ form_row(form.type) }}</div>
+                <div class="col-md-4">{{ form_row(form.deal) }}</div>
+                <div class="col-md-4">{{ form_row(form.contact) }}</div>
+            </div>
+        </div>
+    </div>
+  {{ form_end(form) }}
+{% endblock %}
