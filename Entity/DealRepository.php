@@ -73,4 +73,25 @@ class DealRepository extends CommonRepository
     {
         return $this->getStandardSearchCommands();
     }
+
+    /**
+     * @return Deal[]
+     */
+    public function getDealsForBoard(int $pipelineId): array
+    {
+        return $this->_em->createQueryBuilder()
+            ->select('d', 'st', 'c', 'o')
+            ->from(Deal::class, 'd')
+            ->leftJoin('d.stage', 'st')
+            ->leftJoin('d.contact', 'c')
+            ->leftJoin('d.owner', 'o')
+            ->where('d.pipeline = :pipelineId')
+            ->andWhere('d.isPublished = :published')
+            ->setParameter('pipelineId', $pipelineId)
+            ->setParameter('published', true)
+            ->orderBy('st.order', 'ASC')
+            ->addOrderBy('d.dateAdded', 'DESC')
+            ->getQuery()
+            ->getResult();
+    }
 }
