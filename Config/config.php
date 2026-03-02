@@ -58,6 +58,12 @@ return [
                 'path'            => '/mautomic/tasks',
                 'controller'      => MauticPlugin\MautomicCrmBundle\Controller\Api\TaskApiController::class,
             ],
+            'mautomic_api_notes' => [
+                'standard_entity' => true,
+                'name'            => 'mautomic_notes',
+                'path'            => '/mautomic/notes',
+                'controller'      => MauticPlugin\MautomicCrmBundle\Controller\Api\NoteApiController::class,
+            ],
         ],
     ],
 
