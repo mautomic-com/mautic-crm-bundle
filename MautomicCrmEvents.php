@@ -24,6 +24,10 @@ final class MautomicCrmEvents
 
     public const DEAL_STAGE_CHANGED = 'mautomic_crm.deal_stage_changed';
 
+    public const ON_CAMPAIGN_TRIGGER_DECISION = 'mautomic_crm.on_campaign_trigger_decision';
+
+    public const ON_CAMPAIGN_BATCH_ACTION = 'mautomic_crm.on_campaign_batch_action';
+
     public const TASK_PRE_SAVE = 'mautomic_crm.task_pre_save';
 
     public const TASK_POST_SAVE = 'mautomic_crm.task_post_save';

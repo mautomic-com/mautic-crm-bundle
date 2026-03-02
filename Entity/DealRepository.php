@@ -77,6 +77,27 @@ class DealRepository extends CommonRepository
     /**
      * @return Deal[]
      */
+    public function getDealsForContact(int $contactId, ?int $pipelineId = null): array
+    {
+        $qb = $this->_em->createQueryBuilder()
+            ->select('d')
+            ->from(Deal::class, 'd')
+            ->where('d.contact = :contactId')
+            ->andWhere('d.isPublished = :published')
+            ->setParameter('contactId', $contactId)
+            ->setParameter('published', true);
+
+        if (null !== $pipelineId) {
+            $qb->andWhere('d.pipeline = :pipelineId')
+                ->setParameter('pipelineId', $pipelineId);
+        }
+
+        return $qb->getQuery()->getResult();
+    }
+
+    /**
+     * @return Deal[]
+     */
     public function getDealsForBoard(int $pipelineId): array
     {
         return $this->_em->createQueryBuilder()
