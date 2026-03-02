@@ -37,32 +37,121 @@
           <div>
               {% include '@MauticCore/Helper/description--expanded.html.twig' with {'description': item.description} %}
 
-              <div class="pa-md">
-                  <h4>{{ 'mautomic_crm.pipeline.stages'|trans }}</h4>
-                  {% if item.stages|length > 0 %}
-                      <table class="table table-hover">
-                          <thead>
-                              <tr>
-                                  <th>{{ 'mautomic_crm.stage.name'|trans }}</th>
-                                  <th>{{ 'mautomic_crm.stage.order'|trans }}</th>
-                                  <th>{{ 'mautomic_crm.stage.probability'|trans }}</th>
-                                  <th>{{ 'mautomic_crm.stage.type'|trans }}</th>
-                              </tr>
-                          </thead>
-                          <tbody>
-                          {% for stage in item.stages %}
-                              <tr>
-                                  <td>{{ stage.name }}</td>
-                                  <td>{{ stage.order }}</td>
-                                  <td>{{ stage.probability }}%</td>
-                                  <td>{{ ('mautomic_crm.stage.type.' ~ stage.type)|trans }}</td>
-                              </tr>
-                          {% endfor %}
-                          </tbody>
-                      </table>
-                  {% else %}
-                      <p class="text-muted">{{ 'mautomic_crm.pipeline.no_stages'|trans }}</p>
-                  {% endif %}
+              <ul class="nav nav-tabs nav-tabs-contained pr-md pl-md">
+                  <li class="active">
+                      <a href="#stages-tab" role="tab" data-toggle="tab">
+                          {{ 'mautomic_crm.pipeline.stages_tab'|trans }}
+                      </a>
+                  </li>
+                  <li>
+                      <a href="#board-tab" role="tab" data-toggle="tab">
+                          {{ 'mautomic_crm.pipeline.board'|trans }}
+                      </a>
+                  </li>
+              </ul>
+
+              <div class="tab-content pa-md">
+                  {# Stages Table Tab #}
+                  <div class="tab-pane fade in active" id="stages-tab">
+                      <h4>{{ 'mautomic_crm.pipeline.stages'|trans }}</h4>
+                      {% if item.stages|length > 0 %}
+                          <table class="table table-hover">
+                              <thead>
+                                  <tr>
+                                      <th>{{ 'mautomic_crm.stage.name'|trans }}</th>
+                                      <th>{{ 'mautomic_crm.stage.order'|trans }}</th>
+                                      <th>{{ 'mautomic_crm.stage.probability'|trans }}</th>
+                                      <th>{{ 'mautomic_crm.stage.type'|trans }}</th>
+                                  </tr>
+                              </thead>
+                              <tbody>
+                              {% for stage in item.stages %}
+                                  <tr>
+                                      <td>{{ stage.name }}</td>
+                                      <td>{{ stage.order }}</td>
+                                      <td>{{ stage.probability }}%</td>
+                                      <td>{{ ('mautomic_crm.stage.type.' ~ stage.type)|trans }}</td>
+                                  </tr>
+                              {% endfor %}
+                              </tbody>
+                          </table>
+                      {% else %}
+                          <p class="text-muted">{{ 'mautomic_crm.pipeline.no_stages'|trans }}</p>
+                      {% endif %}
+                  </div>
+
+                  {# Board View Tab #}
+                  <div class="tab-pane fade" id="board-tab">
+                      {% if allPipelines is defined and allPipelines|length > 1 %}
+                          <div class="mb-md">
+                              <label for="pipeline-selector">{{ 'mautomic_crm.pipeline.board.switch_pipeline'|trans }}:</label>
+                              <select id="pipeline-selector" class="form-control" style="display: inline-block; width: auto; margin-left: 5px;" onchange="if(this.value) window.location.href=this.value;">
+                                  {% for pipeline in allPipelines %}
+                                      <option value="{{ path('mautic_mautomic_crm_pipeline_action', {'objectAction': 'view', 'objectId': pipeline.id}) }}"
+                                          {{ pipeline.id == item.id ? 'selected' : '' }}>
+                                          {{ pipeline.name }}
+                                      </option>
+                                  {% endfor %}
+                              </select>
+                          </div>
+                      {% endif %}
+
+                      {% if boardData is defined and boardData|length > 0 %}
+                          <div style="display: flex; overflow-x: auto; gap: 10px; padding-bottom: 10px;">
+                              {% for stageId, column in boardData %}
+                                  <div style="min-width: 250px; max-width: 300px; flex: 0 0 270px;">
+                                      <div class="panel" style="margin-bottom: 0; height: 100%;">
+                                          <div class="panel-heading{% if column.stage.type == 'won' %} bg-success{% elseif column.stage.type == 'lost' %} bg-danger{% endif %}" style="padding: 8px 12px;">
+                                              <h5 style="margin: 0; font-weight: bold;{% if column.stage.type == 'won' or column.stage.type == 'lost' %} color: #fff;{% endif %}">
+                                                  {{ column.stage.name }}
+                                              </h5>
+                                              <small{% if column.stage.type == 'won' or column.stage.type == 'lost' %} style="color: #fff;"{% endif %}>
+                                                  {{ 'mautomic_crm.pipeline.board.deals_count'|trans({'%count%': column.count}) }}
+                                                  {% if column.totalAmount > 0 %}
+                                                      &middot; {{ 'mautomic_crm.pipeline.board.total_amount'|trans({'%amount%': column.totalAmount|number_format(2)}) }}
+                                                  {% endif %}
+                                              </small>
+                                          </div>
+                                          <div class="panel-body" style="padding: 8px; max-height: 500px; overflow-y: auto;">
+                                              {% if column.deals|length > 0 %}
+                                                  {% for deal in column.deals %}
+                                                      <div class="panel" style="margin-bottom: 8px; border: 1px solid #ddd;">
+                                                          <div class="panel-body" style="padding: 10px;">
+                                                              <a href="{{ path('mautic_mautomic_crm_deal_action', {'objectAction': 'view', 'objectId': deal.id}) }}" style="font-weight: bold;">
+                                                                  {{ deal.name }}
+                                                              </a>
+                                                              {% if deal.amount %}
+                                                                  <div style="margin-top: 4px;">
+                                                                      <span class="label label-default">{{ deal.amount|number_format(2) }}{% if deal.currency %} {{ deal.currency }}{% endif %}</span>
+                                                                  </div>
+                                                              {% endif %}
+                                                              {% if deal.contact %}
+                                                                  <div style="margin-top: 4px; font-size: 12px; color: #777;">
+                                                                      <i class="fa fa-user"></i> {{ deal.contact.name ?? deal.contact.email ?? 'Contact #' ~ deal.contact.id }}
+                                                                  </div>
+                                                              {% endif %}
+                                                              {% if deal.owner %}
+                                                                  <div style="margin-top: 4px; font-size: 12px; color: #777;">
+                                                                      <i class="fa fa-briefcase"></i> {{ deal.owner.firstName[:1] ~ deal.owner.lastName[:1] }}
+                                                                  </div>
+                                                              {% endif %}
+                                                          </div>
+                                                      </div>
+                                                  {% endfor %}
+                                              {% else %}
+                                                  <p class="text-muted text-center" style="margin: 20px 0;">
+                                                      {{ 'mautomic_crm.pipeline.board.no_deals'|trans }}
+                                                  </p>
+                                              {% endif %}
+                                          </div>
+                                      </div>
+                                  </div>
+                              {% endfor %}
+                          </div>
+                      {% else %}
+                          <p class="text-muted">{{ 'mautomic_crm.pipeline.no_stages'|trans }}</p>
+                      {% endif %}
+                  </div>
               </div>
           </div>
       </div>
