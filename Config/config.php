@@ -18,13 +18,21 @@ return [
                 'path'       => '/mautomic/pipelines/{objectAction}/{objectId}',
                 'controller' => 'MauticPlugin\MautomicCrmBundle\Controller\PipelineController::executeAction',
             ],
+            'mautic_mautomic_crm_deal_stage_change' => [
+                'path'       => '/mautomic/deals/{objectId}/stage',
+                'controller' => 'MauticPlugin\MautomicCrmBundle\Controller\DealController::quickStageChangeAction',
+                'method'     => 'POST',
+            ],
             'mautic_mautomic_crm_deal_index' => [
                 'path'       => '/mautomic/deals/{page}',
                 'controller' => 'MauticPlugin\MautomicCrmBundle\Controller\DealController::indexAction',
             ],
             'mautic_mautomic_crm_deal_action' => [
-                'path'       => '/mautomic/deals/{objectAction}/{objectId}',
-                'controller' => 'MauticPlugin\MautomicCrmBundle\Controller\DealController::executeAction',
+                'path'         => '/mautomic/deals/{objectAction}/{objectId}',
+                'controller'   => 'MauticPlugin\MautomicCrmBundle\Controller\DealController::executeAction',
+                'requirements' => [
+                    'objectAction' => '[a-zA-Z]+',
+                ],
             ],
             'mautic_mautomic_crm_task_index' => [
                 'path'       => '/mautomic/tasks/{page}',

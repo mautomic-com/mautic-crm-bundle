@@ -54,7 +54,16 @@
                               </tr>
                               <tr>
                                   <td width="20%"><span class="fw-b">{{ 'mautomic_crm.deal.stage'|trans }}</span></td>
-                                  <td>{% if item.stage %}{{ item.stage.name }}{% else %}-{% endif %}</td>
+                                  <td>
+                                      {% if item.stage %}
+                                          {{ item.stage.name }}
+                                          {% if item.stage.type == 'won' %}
+                                              <span class="label label-success">{{ 'mautomic_crm.deal.stage.won'|trans }}</span>
+                                          {% elseif item.stage.type == 'lost' %}
+                                              <span class="label label-danger">{{ 'mautomic_crm.deal.stage.lost'|trans }}</span>
+                                          {% endif %}
+                                      {% else %}-{% endif %}
+                                  </td>
                               </tr>
                               <tr>
                                   <td width="20%"><span class="fw-b">{{ 'mautomic_crm.deal.close_date'|trans }}</span></td>
@@ -96,6 +105,29 @@
                   </span>
               </div>
           </div>
+
+          {% if pipelineStages is defined and pipelineStages|length > 0 %}
+              <div class="pa-md">
+                  <div class="btn-group btn-group-sm" role="group" style="display: flex; flex-wrap: wrap; gap: 2px;">
+                      {% set canEdit = securityHasEntityAccess(permissions['mautomic_crm:deals:editown'], permissions['mautomic_crm:deals:editother'], item.createdBy) %}
+                      {% for stage in pipelineStages %}
+                          {% set isCurrent = item.stage and item.stage.id == stage.id %}
+                          {% if canEdit and not isCurrent %}
+                              <form method="post" action="{{ path('mautic_mautomic_crm_deal_stage_change', {'objectId': item.id}) }}" style="display: inline;">
+                                  <input type="hidden" name="stageId" value="{{ stage.id }}">
+                                  <button type="submit" class="btn {% if stage.type == 'won' %}btn-success{% elseif stage.type == 'lost' %}btn-danger{% else %}btn-default{% endif %}">
+                                      {{ stage.name }}
+                                  </button>
+                              </form>
+                          {% else %}
+                              <span class="btn {% if isCurrent %}btn-primary{% elseif stage.type == 'won' %}btn-success{% elseif stage.type == 'lost' %}btn-danger{% else %}btn-default{% endif %}{% if not canEdit %} disabled{% endif %}"{% if isCurrent %} title="{{ 'mautomic_crm.deal.stage.current'|trans }}"{% endif %}>
+                                  {{ stage.name }}{% if isCurrent %} &#10003;{% endif %}
+                              </span>
+                          {% endif %}
+                      {% endfor %}
+                  </div>
+              </div>
+          {% endif %}
 
           <div class="pa-md">
               <h4>{{ 'mautomic_crm.deal.tasks'|trans }}</h4>
