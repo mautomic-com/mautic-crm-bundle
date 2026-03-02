@@ -53,4 +53,36 @@ class NoteRepository extends CommonRepository
     {
         return $this->getStandardSearchCommands();
     }
+
+    /**
+     * Return notes directly linked to the deal, plus notes linked to the deal's contact
+     * but not directly to any deal (AC-7).
+     *
+     * @return Note[]
+     */
+    public function findByDeal(int $dealId, ?int $contactId = null): array
+    {
+        $qb = $this->createQueryBuilder('n');
+
+        if (null !== $contactId) {
+            $qb->where(
+                $qb->expr()->orX(
+                    $qb->expr()->eq('n.deal', ':dealId'),
+                    $qb->expr()->andX(
+                        $qb->expr()->eq('n.contact', ':contactId'),
+                        $qb->expr()->isNull('n.deal')
+                    )
+                )
+            )
+            ->setParameter('dealId', $dealId)
+            ->setParameter('contactId', $contactId);
+        } else {
+            $qb->where('n.deal = :dealId')
+                ->setParameter('dealId', $dealId);
+        }
+
+        return $qb->orderBy('n.dateAdded', 'DESC')
+            ->getQuery()
+            ->getResult();
+    }
 }
