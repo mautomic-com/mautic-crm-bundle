@@ -43,4 +43,12 @@ final class MautomicCrmEvents
     public const NOTE_PRE_DELETE = 'mautomic_crm.note_pre_delete';
 
     public const NOTE_POST_DELETE = 'mautomic_crm.note_post_delete';
+
+    public const DEAL_FIELD_PRE_SAVE = 'mautomic_crm.deal_field_pre_save';
+
+    public const DEAL_FIELD_POST_SAVE = 'mautomic_crm.deal_field_post_save';
+
+    public const DEAL_FIELD_PRE_DELETE = 'mautomic_crm.deal_field_pre_delete';
+
+    public const DEAL_FIELD_POST_DELETE = 'mautomic_crm.deal_field_post_delete';
 }

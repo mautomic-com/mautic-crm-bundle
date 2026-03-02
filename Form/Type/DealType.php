@@ -14,14 +14,18 @@ use Mautic\CoreBundle\Form\Type\YesNoButtonGroupType;
 use Mautic\UserBundle\Entity\User;
 use Mautic\UserBundle\Form\Type\UserListType;
 use MauticPlugin\MautomicCrmBundle\Entity\Deal;
+use MauticPlugin\MautomicCrmBundle\Entity\DealField;
+use MauticPlugin\MautomicCrmBundle\Entity\DealFieldRepository;
 use MauticPlugin\MautomicCrmBundle\Entity\Pipeline;
 use MauticPlugin\MautomicCrmBundle\Entity\PipelineRepository;
 use MauticPlugin\MautomicCrmBundle\Entity\Stage;
 use MauticPlugin\MautomicCrmBundle\Entity\StageRepository;
 use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Component\Form\AbstractType;
+use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
 use Symfony\Component\Form\Extension\Core\Type\DateType;
 use Symfony\Component\Form\Extension\Core\Type\MoneyType;
+use Symfony\Component\Form\Extension\Core\Type\NumberType;
 use Symfony\Component\Form\Extension\Core\Type\TextareaType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\FormBuilderInterface;
@@ -34,6 +38,7 @@ class DealType extends AbstractType
 {
     public function __construct(
         private EntityManagerInterface $entityManager,
+        private DealFieldRepository $dealFieldRepository,
     ) {
     }
 
@@ -126,6 +131,8 @@ class DealType extends AbstractType
 
         $builder->add('isPublished', YesNoButtonGroupType::class);
 
+        $this->addCustomFields($builder, $options);
+
         if (!empty($options['action'])) {
             $builder->setAction($options['action']);
         }
@@ -136,7 +143,105 @@ class DealType extends AbstractType
     public function configureOptions(OptionsResolver $resolver): void
     {
         $resolver->setDefaults([
-            'data_class' => Deal::class,
+            'data_class'          => Deal::class,
+            'custom_field_values' => [],
         ]);
+    }
+
+    /**
+     * @param array<string, mixed> $options
+     */
+    private function addCustomFields(FormBuilderInterface $builder, array $options): void
+    {
+        $publishedFields   = $this->dealFieldRepository->getPublishedFields();
+        $customFieldValues = $options['custom_field_values'] ?? [];
+
+        foreach ($publishedFields as $field) {
+            $fieldName    = 'cf_'.$field->getAlias();
+            $fieldOptions = $this->getFieldFormOptions($field);
+
+            if (isset($customFieldValues[$field->getAlias()])) {
+                $value = $customFieldValues[$field->getAlias()];
+
+                if ('boolean' === $field->getType()) {
+                    $value = (bool) $value ? 1 : 0;
+                }
+
+                $fieldOptions['options']['data'] = $value;
+            }
+
+            $builder->add($fieldName, $fieldOptions['type'], $fieldOptions['options']);
+        }
+    }
+
+    /**
+     * @return array{type: class-string, options: array<string, mixed>}
+     */
+    private function getFieldFormOptions(DealField $field): array
+    {
+        $baseOptions = [
+            'label'      => $field->getLabel(),
+            'label_attr' => ['class' => 'control-label'],
+            'attr'       => ['class' => 'form-control'],
+            'required'   => $field->getIsRequired(),
+            'mapped'     => false,
+        ];
+
+        return match ($field->getType()) {
+            'textarea' => [
+                'type'    => TextareaType::class,
+                'options' => $baseOptions,
+            ],
+            'number' => [
+                'type'    => NumberType::class,
+                'options' => $baseOptions,
+            ],
+            'select' => [
+                'type'    => ChoiceType::class,
+                'options' => array_merge($baseOptions, [
+                    'choices'     => $this->parseSelectOptions($field->getProperties()),
+                    'placeholder' => '',
+                    'required'    => $field->getIsRequired(),
+                ]),
+            ],
+            'date' => [
+                'type'    => DateType::class,
+                'options' => array_merge($baseOptions, [
+                    'widget' => 'single_text',
+                ]),
+            ],
+            'boolean' => [
+                'type'    => YesNoButtonGroupType::class,
+                'options' => [
+                    'label'    => $field->getLabel(),
+                    'required' => $field->getIsRequired(),
+                    'mapped'   => false,
+                ],
+            ],
+            default => [
+                'type'    => TextType::class,
+                'options' => $baseOptions,
+            ],
+        };
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private function parseSelectOptions(?string $properties): array
+    {
+        if (empty($properties)) {
+            return [];
+        }
+
+        $options = [];
+        foreach (explode('|', $properties) as $option) {
+            $option = trim($option);
+            if ('' !== $option) {
+                $options[$option] = $option;
+            }
+        }
+
+        return $options;
     }
 }

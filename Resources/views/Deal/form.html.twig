@@ -31,6 +31,23 @@
                 <div class="col-md-4">{{ form_row(form.owner) }}</div>
                 <div class="col-md-4">{{ form_row(form.category) }}</div>
             </div>
+            {% set customFieldNames = [] %}
+            {% for child in form %}
+                {% if child.vars.name starts with 'cf_' %}
+                    {% set customFieldNames = customFieldNames|merge([child.vars.name]) %}
+                {% endif %}
+            {% endfor %}
+            {% if customFieldNames|length > 0 %}
+                <hr class="mn" />
+                <div class="pa-md">
+                    <h4>{{ 'mautomic_crm.deal_field.custom_fields'|trans }}</h4>
+                    {% for name in customFieldNames %}
+                        <div class="row">
+                            <div class="col-md-6">{{ form_row(form[name]) }}</div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
         </div>
         <div class="col-md-3 height-auto">
             <div class="pr-lg pl-lg pt-md pb-md">
