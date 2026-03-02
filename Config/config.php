@@ -46,6 +46,14 @@ return [
                 'path'       => '/mautomic/notes/{objectAction}/{objectId}',
                 'controller' => 'MauticPlugin\MautomicCrmBundle\Controller\NoteController::executeAction',
             ],
+            'mautic_mautomic_crm_deal_field_index' => [
+                'path'       => '/mautomic/deal-fields/{page}',
+                'controller' => 'MauticPlugin\MautomicCrmBundle\Controller\DealFieldController::indexAction',
+            ],
+            'mautic_mautomic_crm_deal_field_action' => [
+                'path'       => '/mautomic/deal-fields/{objectAction}/{objectId}',
+                'controller' => 'MauticPlugin\MautomicCrmBundle\Controller\DealFieldController::executeAction',
+            ],
         ],
         'api' => [
             'mautomic_api_pipelines' => [
@@ -72,6 +80,12 @@ return [
                 'path'            => '/mautomic/notes',
                 'controller'      => MauticPlugin\MautomicCrmBundle\Controller\Api\NoteApiController::class,
             ],
+            'mautomic_api_deal_fields' => [
+                'standard_entity' => true,
+                'name'            => 'mautomic_deal_fields',
+                'path'            => '/mautomic/deal-fields',
+                'controller'      => MauticPlugin\MautomicCrmBundle\Controller\Api\DealFieldApiController::class,
+            ],
         ],
     ],
 
@@ -94,6 +108,12 @@ return [
                 'access'   => 'mautomic_crm:pipelines:view',
                 'parent'   => 'mautomic_crm.crm',
                 'priority' => 20,
+            ],
+            'mautomic_crm.deal_fields' => [
+                'route'    => 'mautic_mautomic_crm_deal_field_index',
+                'access'   => 'mautomic_crm:deals:view',
+                'parent'   => 'mautomic_crm.crm',
+                'priority' => 15,
             ],
             'mautomic_crm.tasks' => [
                 'route'    => 'mautic_mautomic_crm_task_index',

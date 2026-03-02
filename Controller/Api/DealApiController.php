@@ -14,6 +14,7 @@ use Mautic\CoreBundle\Security\Permissions\CorePermissions;
 use Mautic\CoreBundle\Translation\Translator;
 use Mautic\UserBundle\Entity\User;
 use MauticPlugin\MautomicCrmBundle\Entity\Deal;
+use MauticPlugin\MautomicCrmBundle\Entity\DealFieldValueRepository;
 use MauticPlugin\MautomicCrmBundle\Model\DealModel;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\Form\FormFactoryInterface;
@@ -27,6 +28,13 @@ use Symfony\Component\Routing\RouterInterface;
  */
 class DealApiController extends CommonApiController
 {
+    private DealFieldValueRepository $dealFieldValueRepository;
+
+    /**
+     * @var array<string, string|null>
+     */
+    private array $pendingCustomFields = [];
+
     public function __construct(
         CorePermissions $security,
         Translator $translator,
@@ -39,15 +47,17 @@ class DealApiController extends CommonApiController
         ModelFactory $modelFactory,
         EventDispatcherInterface $dispatcher,
         CoreParametersHelper $coreParametersHelper,
+        DealFieldValueRepository $dealFieldValueRepository,
     ) {
         $dealModel = $modelFactory->getModel('mautomic_crm.deal');
         \assert($dealModel instanceof DealModel);
 
-        $this->model           = $dealModel;
-        $this->entityClass     = Deal::class;
-        $this->entityNameOne   = 'deal';
-        $this->entityNameMulti = 'mautomic_deals';
-        $this->permissionBase  = 'mautomic_crm:deals';
+        $this->model                    = $dealModel;
+        $this->entityClass              = Deal::class;
+        $this->entityNameOne            = 'deal';
+        $this->entityNameMulti          = 'mautomic_deals';
+        $this->permissionBase           = 'mautomic_crm:deals';
+        $this->dealFieldValueRepository = $dealFieldValueRepository;
 
         parent::__construct($security, $translator, $entityResultHelper, $router, $formFactory, $appVersion, $requestStack, $doctrine, $modelFactory, $dispatcher, $coreParametersHelper);
     }
@@ -81,7 +91,7 @@ class DealApiController extends CommonApiController
             $parameters['stage'] = $entity->getStage()->getId();
         }
 
-        unset($parameters['owner']);
+        unset($parameters['owner'], $parameters['customFields']);
 
         return $parameters;
     }
@@ -100,6 +110,33 @@ class DealApiController extends CommonApiController
             \assert($em instanceof \Doctrine\ORM\EntityManagerInterface);
             $owner = $em->getReference(User::class, $ownerId);
             $entity->setOwner($owner);
+        }
+
+        if (!empty($this->entityRequestParameters['customFields']) && \is_array($this->entityRequestParameters['customFields'])) {
+            $this->pendingCustomFields = $this->entityRequestParameters['customFields'];
+        }
+    }
+
+    /**
+     * @param Deal $entity
+     */
+    protected function saveEntity($entity, int $statusCode): int
+    {
+        $statusCode = parent::saveEntity($entity, $statusCode);
+
+        if (!empty($this->pendingCustomFields) && $entity instanceof Deal && null !== $entity->getId()) {
+            $this->dealFieldValueRepository->saveValues($entity, $this->pendingCustomFields);
+            $this->pendingCustomFields = [];
+        }
+
+        return $statusCode;
+    }
+
+    protected function preSerializeEntity(object $entity, string $action = 'view'): void
+    {
+        if ($entity instanceof Deal && null !== $entity->getId()) {
+            $values = $this->dealFieldValueRepository->getValuesForDeal((int) $entity->getId());
+            $entity->setCustomFieldValues($values);
         }
     }
 }

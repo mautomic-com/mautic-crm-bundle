@@ -6,7 +6,12 @@ namespace MauticPlugin\MautomicCrmBundle\Controller;
 
 use Mautic\CoreBundle\Controller\AbstractStandardFormController;
 use MauticPlugin\MautomicCrmBundle\Entity\Deal;
+use MauticPlugin\MautomicCrmBundle\Entity\DealField;
+use MauticPlugin\MautomicCrmBundle\Entity\DealFieldRepository;
+use MauticPlugin\MautomicCrmBundle\Entity\DealFieldValue;
+use MauticPlugin\MautomicCrmBundle\Entity\DealFieldValueRepository;
 use MauticPlugin\MautomicCrmBundle\Model\DealModel;
+use Symfony\Component\Form\Form;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -44,10 +49,61 @@ class DealController extends AbstractStandardFormController
                 } else {
                     $args['viewParameters']['pipelineStages'] = [];
                 }
+
+                $fieldRepo = $this->getDealFieldRepository();
+                $valueRepo = $this->getDealFieldValueRepository();
+
+                $args['viewParameters']['customFields']      = $fieldRepo->getPublishedFields();
+                $args['viewParameters']['customFieldValues'] = $valueRepo->getValuesForDeal((int) $entity->getId());
             }
         }
 
         return $args;
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    protected function getEntityFormOptions(): array
+    {
+        $request = $this->getCurrentRequest();
+        $dealId  = (int) $request->attributes->get('objectId', 0);
+
+        $customFieldValues = [];
+        if ($dealId > 0) {
+            $valueRepo         = $this->getDealFieldValueRepository();
+            $customFieldValues = $valueRepo->getValuesForDeal($dealId);
+        }
+
+        return ['custom_field_values' => $customFieldValues];
+    }
+
+    /**
+     * @param mixed $entity
+     * @param mixed $action
+     * @param mixed $pass
+     */
+    protected function afterEntitySave($entity, Form $form, $action, $pass = null): void
+    {
+        if (!$entity instanceof Deal || null === $entity->getId()) {
+            return;
+        }
+
+        $request  = $this->getCurrentRequest();
+        $formData = $request->request->all('deal') ?: [];
+
+        $customFieldValues = [];
+        foreach ($formData as $key => $value) {
+            if (str_starts_with($key, 'cf_')) {
+                $alias                     = substr($key, 3);
+                $customFieldValues[$alias] = \is_string($value) ? $value : (string) $value;
+            }
+        }
+
+        if (!empty($customFieldValues)) {
+            $valueRepo = $this->getDealFieldValueRepository();
+            $valueRepo->saveValues($entity, $customFieldValues);
+        }
     }
 
     protected function getTemplateBase(): string
@@ -189,5 +245,27 @@ class DealController extends AbstractStandardFormController
     public function batchDeleteAction(Request $request)
     {
         return parent::batchDeleteStandard($request);
+    }
+
+    private function getDealFieldRepository(): DealFieldRepository
+    {
+        $em = $this->doctrine->getManager();
+        \assert($em instanceof \Doctrine\ORM\EntityManagerInterface);
+
+        /** @var DealFieldRepository $repo */
+        $repo = $em->getRepository(DealField::class);
+
+        return $repo;
+    }
+
+    private function getDealFieldValueRepository(): DealFieldValueRepository
+    {
+        $em = $this->doctrine->getManager();
+        \assert($em instanceof \Doctrine\ORM\EntityManagerInterface);
+
+        /** @var DealFieldValueRepository $repo */
+        $repo = $em->getRepository(DealFieldValue::class);
+
+        return $repo;
     }
 }
