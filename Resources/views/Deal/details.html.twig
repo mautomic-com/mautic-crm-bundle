@@ -89,6 +89,14 @@
                                       </a>
                                   {% else %}-{% endif %}</td>
                               </tr>
+                              {% if customFields is defined %}
+                                  {% for field in customFields %}
+                                      <tr>
+                                          <td width="20%"><span class="fw-b">{{ field.label }}</span></td>
+                                          <td>{{ customFieldValues[field.alias] ?? '-' }}</td>
+                                      </tr>
+                                  {% endfor %}
+                              {% endif %}
                               </tbody>
                           </table>
                       </div>

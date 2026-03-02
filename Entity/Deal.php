@@ -40,6 +40,11 @@ class Deal extends FormEntity
 
     private ?\Mautic\CategoryBundle\Entity\Category $category = null;
 
+    /**
+     * @var array<string, string|null>
+     */
+    private array $customFieldValues = [];
+
     public function __clone()
     {
         $this->id = null;
@@ -114,6 +119,7 @@ class Deal extends FormEntity
                 'company',
                 'owner',
                 'category',
+                'customFieldValues',
             ])
             ->build();
     }
@@ -262,6 +268,24 @@ class Deal extends FormEntity
     {
         $this->isChanged('category', $category);
         $this->category = $category;
+
+        return $this;
+    }
+
+    /**
+     * @return array<string, string|null>
+     */
+    public function getCustomFieldValues(): array
+    {
+        return $this->customFieldValues;
+    }
+
+    /**
+     * @param array<string, string|null> $customFieldValues
+     */
+    public function setCustomFieldValues(array $customFieldValues): self
+    {
+        $this->customFieldValues = $customFieldValues;
 
         return $this;
     }
