@@ -8,6 +8,8 @@ use Mautic\CoreBundle\Model\FormModel;
 use MauticPlugin\MautomicCrmBundle\Entity\Deal;
 use MauticPlugin\MautomicCrmBundle\Entity\DealRepository;
 use MauticPlugin\MautomicCrmBundle\Entity\Pipeline;
+use MauticPlugin\MautomicCrmBundle\Entity\Stage;
+use MauticPlugin\MautomicCrmBundle\Entity\StageRepository;
 use MauticPlugin\MautomicCrmBundle\Event\DealEvent;
 use MauticPlugin\MautomicCrmBundle\Form\Type\DealType;
 use MauticPlugin\MautomicCrmBundle\MautomicCrmEvents;
@@ -56,7 +58,7 @@ class DealModel extends FormModel
                 $deal->setPipeline($defaultPipeline);
 
                 $firstStage = $defaultPipeline->getStages()->first();
-                if ($firstStage instanceof \MauticPlugin\MautomicCrmBundle\Entity\Stage) {
+                if ($firstStage instanceof Stage) {
                     $deal->setStage($firstStage);
                 }
             }
@@ -67,16 +69,28 @@ class DealModel extends FormModel
         return parent::getEntity($id);
     }
 
+    public function getStageRepository(): StageRepository
+    {
+        return $this->em->getRepository(Stage::class);
+    }
+
     /**
      * @param Deal $entity
      */
     public function saveEntity($entity, $unlock = true): void
     {
-        if ($entity instanceof Deal && null === $entity->getStage()) {
+        if ($entity instanceof Deal) {
+            $changes  = $entity->getChanges();
             $pipeline = $entity->getPipeline();
-            if (null !== $pipeline) {
+
+            if (isset($changes['pipeline']) && null !== $pipeline) {
+                $stages = $this->getStageRepository()->getStagesByPipeline((int) $pipeline->getId());
+                $entity->setStage(!empty($stages) ? $stages[0] : null);
+            }
+
+            if (null === $entity->getStage() && null !== $pipeline) {
                 $firstStage = $pipeline->getStages()->first();
-                if ($firstStage instanceof \MauticPlugin\MautomicCrmBundle\Entity\Stage) {
+                if ($firstStage instanceof Stage) {
                     $entity->setStage($firstStage);
                 }
             }
