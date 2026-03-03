@@ -22,7 +22,7 @@ class ScreenshotHelper extends Module
         $paddedStep = str_pad((string) $this->stepCounter, 2, '0', STR_PAD_LEFT);
         $safeName   = preg_replace('/[^a-zA-Z0-9_-]/', '_', $label);
 
-        /** @var \Codeception\Module\WebDriver $webDriver */
+        /** @var Module\WebDriver $webDriver */
         $webDriver = $this->getModule('WebDriver');
         $webDriver->makeScreenshot("{$paddedStep}_{$safeName}");
     }
