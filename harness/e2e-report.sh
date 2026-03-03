@@ -4,7 +4,8 @@
 
 set -euo pipefail
 
-REPORT_URL="https://mautic-001.ddev.site:8090/report.html"
+DDEV_HOSTNAME="$(ddev describe -j 2>/dev/null | php -r 'echo json_decode(file_get_contents("php://stdin"))->raw->hostname ?? "localhost";')"
+REPORT_URL="https://${DDEV_HOSTNAME}:8090/report.html"
 
 echo "Opening E2E report: $REPORT_URL"
 
