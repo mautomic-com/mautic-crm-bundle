@@ -28,7 +28,7 @@ class AcceptanceTester extends Actor
 
     public function login(?string $name = null, ?string $password = null): void
     {
-        $name     ??= getenv('MAUTIC_ADMIN_USER') ?: 'admin';
+        $name ??= getenv('MAUTIC_ADMIN_USER') ?: 'admin';
         $password ??= getenv('MAUTIC_ADMIN_PASSWORD') ?: 'mautic';
         $I = $this;
 
