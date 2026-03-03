@@ -28,5 +28,6 @@ ddev exec vendor/bin/codecept run acceptance \
 
 echo ""
 echo "=== Done ==="
-echo "Report: https://mautic-001.ddev.site:8090/report.html"
+DDEV_HOSTNAME="$(ddev describe -j 2>/dev/null | php -r 'echo json_decode(file_get_contents("php://stdin"))->raw->hostname ?? "localhost";')"
+echo "Report: https://${DDEV_HOSTNAME}:8090/report.html"
 echo "Screenshots: plugins/MautomicCrmBundle/Tests/Acceptance/_output/"

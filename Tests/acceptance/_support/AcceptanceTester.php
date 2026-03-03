@@ -26,8 +26,10 @@ class AcceptanceTester extends Actor
 {
     use _generated\AcceptanceTesterActions;
 
-    public function login(string $name = 'admin', string $password = 'Maut1cR0cks!'): void
+    public function login(?string $name = null, ?string $password = null): void
     {
+        $name     ??= getenv('MAUTIC_ADMIN_USER') ?: 'admin';
+        $password ??= getenv('MAUTIC_ADMIN_PASSWORD') ?: 'mautic';
         $I = $this;
 
         if ($I->loadSessionSnapshot('crm_login')) {

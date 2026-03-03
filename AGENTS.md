@@ -55,7 +55,7 @@ ddev exec bin/php-cs-fixer fix plugins/MautomicCrmBundle/ --dry-run --diff --con
 
 ## Browser Smoke Testing
 
-Login: `https://mautic-001.ddev.site` — credentials: `admin` / `Maut1cR0cks!`
+Login: `https://<your-ddev-site>` — use your local Mautic admin credentials
 
 Use Cursor IDE browser MCP or browser-use subagent to verify UI flows.
 Every feature spec lists specific browser smoke tests that MUST pass.
@@ -69,16 +69,16 @@ browser_navigate → url: javascript:void(document.querySelector('.sf-toolbar')&
 
 **2. Navigate directly to URLs instead of clicking through menus:**
 ```
-Pipelines list:  https://mautic-001.ddev.site/s/mautomic/pipelines
-Pipeline detail: https://mautic-001.ddev.site/s/mautomic/pipelines/view/{id}
-Pipeline edit:   https://mautic-001.ddev.site/s/mautomic/pipelines/edit/{id}
-Deals list:      https://mautic-001.ddev.site/s/mautomic/deals
-Deal new:        https://mautic-001.ddev.site/s/mautomic/deals/new
-Deal detail:     https://mautic-001.ddev.site/s/mautomic/deals/view/{id}
-Deal edit:       https://mautic-001.ddev.site/s/mautomic/deals/edit/{id}
-Tasks list:      https://mautic-001.ddev.site/s/mautomic/tasks
-Task new:        https://mautic-001.ddev.site/s/mautomic/tasks/new
-Task detail:     https://mautic-001.ddev.site/s/mautomic/tasks/view/{id}
+Pipelines list:  https://<your-ddev-site>/s/mautomic/pipelines
+Pipeline detail: https://<your-ddev-site>/s/mautomic/pipelines/view/{id}
+Pipeline edit:   https://<your-ddev-site>/s/mautomic/pipelines/edit/{id}
+Deals list:      https://<your-ddev-site>/s/mautomic/deals
+Deal new:        https://<your-ddev-site>/s/mautomic/deals/new
+Deal detail:     https://<your-ddev-site>/s/mautomic/deals/view/{id}
+Deal edit:       https://<your-ddev-site>/s/mautomic/deals/edit/{id}
+Tasks list:      https://<your-ddev-site>/s/mautomic/tasks
+Task new:        https://<your-ddev-site>/s/mautomic/tasks/new
+Task detail:     https://<your-ddev-site>/s/mautomic/tasks/view/{id}
 ```
 
 **3. Submit Mautic forms via JS (Save & Close dropdown is unreliable via accessibility refs):**
