@@ -1,0 +1,17 @@
+actor: AcceptanceTester
+modules:
+  enabled:
+    - Asserts
+    - WebDriver:
+        url: "https://web:443"
+        host: selenium-chrome
+        browser: chrome
+        port: 4444
+        window_size: 1280x1024
+        capabilities:
+          chromeOptions:
+            args:
+              - "--ignore-certificate-errors"
+              - "--disable-dev-shm-usage"
+    - \MautomicCrmTests\Helper\ScreenshotHelper
+    - \MautomicCrmTests\Helper\CrmDataHelper

@@ -55,7 +55,14 @@ jobs:
 
       - name: PHPStan (level 6)
         working-directory: mautic
-        run: php -d memory_limit=1G bin/phpstan analyse plugins/MautomicCrmBundle --level=6 --no-progress
+        run: |
+          # Exclude Codeception acceptance tests (auto-generated tester trait not available in CI)
+          php -r "
+            \$c = file_get_contents('phpstan.neon');
+            \$c = str_replace(\"\texcludePaths:\n\", \"\texcludePaths:\n\t\t- plugins/MautomicCrmBundle/Tests/acceptance\n\", \$c);
+            file_put_contents('phpstan.neon', \$c);
+          "
+          php -d memory_limit=1G bin/phpstan analyse plugins/MautomicCrmBundle --level=6 --no-progress
 
       - name: Coding Standards
         working-directory: mautic
