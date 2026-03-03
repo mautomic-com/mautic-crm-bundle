@@ -1,0 +1,3 @@
+Tests/acceptance/_output/*
+!Tests/acceptance/_output/.gitignore
+Tests/acceptance/_support/_generated/
