@@ -1,4 +1,4 @@
-# MautomicCrmBundle
+# Mautic CRM Plugin (by Mautomic)
 
 HubSpot-style CRM plugin for [Mautic](https://mautic.org/) 7 — deals, pipelines, tasks, and notes.
 
