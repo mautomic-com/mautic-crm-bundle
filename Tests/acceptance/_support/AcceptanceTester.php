@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace MautomicCrmTests;
 
 use Codeception\Actor;
-use Facebook\WebDriver\WebDriverKeys;
 
 /**
  * Inherited Methods.
@@ -81,16 +80,16 @@ class AcceptanceTester extends Actor
     public function selectChosenOption(string $selectCssId, string $optionTextOrValue): void
     {
         $this->executeJS(
-            "var s = document.querySelector(arguments[0]);"
+            'var s = document.querySelector(arguments[0]);'
             ."if(!s) throw new Error('Select not found: '+arguments[0]);"
-            ."var t=arguments[1];"
-            ."for(var i=0;i<s.options.length;i++){"
-            ."  if(s.options[i].text.trim()===t || s.options[i].value===t){"
-            ."    s.value=s.options[i].value;"
+            .'var t=arguments[1];'
+            .'for(var i=0;i<s.options.length;i++){'
+            .'  if(s.options[i].text.trim()===t || s.options[i].value===t){'
+            .'    s.value=s.options[i].value;'
             ."    jQuery(s).trigger('chosen:updated').trigger('change');"
-            ."    return true;"
-            ."  }"
-            ."}"
+            .'    return true;'
+            .'  }'
+            .'}'
             ."throw new Error('Option not found: '+t+' in '+arguments[0]);",
             [$selectCssId, $optionTextOrValue]
         );
