@@ -1,0 +1,16 @@
+namespace: MautomicCrmTests
+paths:
+  tests: .
+  output: acceptance/_output
+  data: acceptance/_data
+  support: acceptance/_support
+  envs: acceptance/_envs
+actor_suffix: Tester
+extensions:
+  enabled:
+    - Codeception\Extension\RunFailed
+params:
+  - ../../../.env.test.local
+settings:
+  error_level: "E_ALL & ~E_DEPRECATED & ~E_USER_DEPRECATED"
+bootstrap: ../../../vendor/autoload.php

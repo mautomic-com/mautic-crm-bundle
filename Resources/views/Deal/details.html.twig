@@ -197,7 +197,7 @@
                                       <a class="btn btn-default btn-xs" href="{{ path('mautic_mautomic_crm_note_action', {'objectAction': 'edit', 'objectId': note.id, 'dealId': item.id}) }}">
                                           <i class="ri-pencil-line"></i>
                                       </a>
-                                      <a class="btn btn-danger btn-xs" href="{{ path('mautic_mautomic_crm_note_action', {'objectAction': 'delete', 'objectId': note.id, 'dealId': item.id}) }}" data-toggle="confirmation" data-message="{{ 'mautomic_crm.note.confirmdelete'|trans }}">
+                                      <a class="btn btn-danger btn-xs" href="{{ path('mautic_mautomic_crm_note_action', {'objectAction': 'delete', 'objectId': note.id, 'dealId': item.id}) }}" data-toggle="confirmation" data-message="{{ 'mautomic_crm.note.confirmdelete'|trans }}" data-confirm-text="Delete" data-cancel-text="Cancel" data-confirm-callback="executeAction" data-cancel-callback="dismissConfirmation">
                                           <i class="ri-delete-bin-line"></i>
                                       </a>
                                   </div>
