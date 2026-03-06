@@ -36,7 +36,35 @@
   <div class="box-layout">
       <div class="col-md-9 height-auto">
           <div>
-              {% include '@MauticCore/Helper/description--expanded.html.twig' with {'description': item.description} %}
+              <div class="row">
+                  <div class="col-md-5">
+                      {% include '@MauticCore/Helper/description--expanded.html.twig' with {'description': item.description} %}
+                  </div>
+                  <div class="col-md-7 pa-md">
+                      <div class="row">
+                          <div class="col-md-6">
+                              <span class="fw-b text-muted">{{ 'mautomic_crm.deal.contact'|trans }}</span><br>
+                              {% if item.contact %}
+                                  <a href="{{ path('mautic_contact_action', {'objectAction': 'view', 'objectId': item.contact.id}) }}">
+                                      <i class="fa fa-user"></i> {{ item.contact.name ?: item.contact.email ?: 'Contact #' ~ item.contact.id }}
+                                  </a>
+                              {% else %}
+                                  <span class="text-muted">-</span>
+                              {% endif %}
+                          </div>
+                          <div class="col-md-6">
+                              <span class="fw-b text-muted">{{ 'mautomic_crm.deal.company'|trans }}</span><br>
+                              {% if item.company %}
+                                  <a href="{{ path('mautic_company_action', {'objectAction': 'view', 'objectId': item.company.id}) }}">
+                                      <i class="fa fa-building"></i> {{ item.company.name }}
+                                  </a>
+                              {% else %}
+                                  <span class="text-muted">-</span>
+                              {% endif %}
+                          </div>
+                      </div>
+                  </div>
+              </div>
 
               <div class="collapse pr-md pl-md" id="deal-details">
                   <div class="pr-md pl-md pb-md">
