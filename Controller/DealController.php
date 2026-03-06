@@ -131,14 +131,19 @@ class DealController extends AbstractStandardFormController
         return 'mautomic_crm:deals';
     }
 
-    public function quickStageChangeAction(Request $request, int|string $objectId): RedirectResponse
+    public function quickStageChangeAction(Request $request, int|string $objectId): JsonResponse|RedirectResponse
     {
+        $isAjax    = $request->isXmlHttpRequest();
         $dealModel = $this->getModel('mautomic_crm.deal');
         \assert($dealModel instanceof DealModel);
 
         $deal = $dealModel->getEntity((int) $objectId);
 
         if (null === $deal) {
+            if ($isAjax) {
+                return new JsonResponse(['success' => false, 'message' => 'Deal not found.'], Response::HTTP_NOT_FOUND);
+            }
+
             return $this->redirect($this->generateUrl('mautic_mautomic_crm_deal_index'));
         }
 
@@ -147,6 +152,10 @@ class DealController extends AbstractStandardFormController
             'mautomic_crm:deals:editother',
             $deal->getCreatedBy()
         )) {
+            if ($isAjax) {
+                return new JsonResponse(['success' => false, 'message' => 'Permission denied.'], Response::HTTP_FORBIDDEN);
+            }
+
             return $this->redirect($this->generateUrl('mautic_mautomic_crm_deal_action', [
                 'objectAction' => 'view',
                 'objectId'     => $objectId,
@@ -157,6 +166,10 @@ class DealController extends AbstractStandardFormController
         $pipeline = $deal->getPipeline();
 
         if (null === $pipeline || 0 === $stageId) {
+            if ($isAjax) {
+                return new JsonResponse(['success' => false, 'message' => 'Invalid stage or pipeline.'], Response::HTTP_BAD_REQUEST);
+            }
+
             $this->addFlashMessage('mautomic_crm.deal.stage.change.invalid');
 
             return $this->redirect($this->generateUrl('mautic_mautomic_crm_deal_action', [
@@ -175,6 +188,10 @@ class DealController extends AbstractStandardFormController
         }
 
         if (null === $validStage) {
+            if ($isAjax) {
+                return new JsonResponse(['success' => false, 'message' => 'Stage not found in pipeline.'], Response::HTTP_BAD_REQUEST);
+            }
+
             $this->addFlashMessage('mautomic_crm.deal.stage.change.invalid');
 
             return $this->redirect($this->generateUrl('mautic_mautomic_crm_deal_action', [
@@ -185,6 +202,10 @@ class DealController extends AbstractStandardFormController
 
         $deal->setStage($validStage);
         $dealModel->saveEntity($deal);
+
+        if ($isAjax) {
+            return new JsonResponse(['success' => true, 'dealId' => $deal->getId(), 'stageId' => $validStage->getId()]);
+        }
 
         $this->addFlashMessage('mautomic_crm.deal.stage.change.success');
 

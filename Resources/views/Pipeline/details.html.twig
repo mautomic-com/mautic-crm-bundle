@@ -68,9 +68,9 @@
                       {% endif %}
 
                       {% if boardData is defined and boardData|length > 0 %}
-                          <div style="display: flex; overflow-x: auto; gap: 10px; padding-bottom: 10px;">
+                          <div id="pipeline-board" style="display: flex; overflow-x: auto; gap: 10px; padding-bottom: 10px;">
                               {% for stageId, column in boardData %}
-                                  <div style="min-width: 250px; max-width: 300px; flex: 0 0 270px;">
+                                  <div class="board-column" data-stage-id="{{ stageId }}" style="min-width: 250px; max-width: 300px; flex: 0 0 270px;">
                                       <div class="panel" style="margin-bottom: 0; height: 100%;">
                                           <div class="panel-heading{% if column.stage.type == 'won' %} bg-success{% elseif column.stage.type == 'lost' %} bg-danger{% endif %}" style="padding: 8px 12px;">
                                               <h5 style="margin: 0; font-weight: bold;{% if column.stage.type == 'won' or column.stage.type == 'lost' %} color: #fff;{% endif %}">
@@ -83,10 +83,10 @@
                                                   {% endif %}
                                               </small>
                                           </div>
-                                          <div class="panel-body" style="padding: 8px; max-height: 500px; overflow-y: auto;">
+                                          <div class="panel-body board-drop-zone" data-stage-id="{{ stageId }}" style="padding: 8px; min-height: 60px; max-height: 500px; overflow-y: auto;">
                                               {% if column.deals|length > 0 %}
                                                   {% for deal in column.deals %}
-                                                      <div class="panel" style="margin-bottom: 8px; border: 1px solid #ddd;">
+                                                      <div class="panel board-deal-card" draggable="true" data-deal-id="{{ deal.id }}" style="margin-bottom: 8px; border: 1px solid #ddd; cursor: grab;">
                                                           <div class="panel-body" style="padding: 10px;">
                                                               <a href="{{ path('mautic_mautomic_crm_deal_action', {'objectAction': 'view', 'objectId': deal.id}) }}" style="font-weight: bold;">
                                                                   {{ deal.name }}
@@ -110,7 +110,7 @@
                                                       </div>
                                                   {% endfor %}
                                               {% else %}
-                                                  <p class="text-muted text-center" style="margin: 20px 0;">
+                                                  <p class="text-muted text-center board-empty-message" style="margin: 20px 0;">
                                                       {{ 'mautomic_crm.pipeline.board.no_deals'|trans }}
                                                   </p>
                                               {% endif %}
@@ -156,4 +156,138 @@
           </div>
       </div>
   </div>
+
+  <style>
+      .board-deal-card.dragging {
+          opacity: 0.4;
+      }
+      .board-drop-zone.drag-over {
+          background-color: #e8f4fd;
+          border: 2px dashed #4a90d9;
+          border-radius: 4px;
+      }
+      .board-deal-card {
+          transition: opacity 0.2s ease;
+      }
+      .board-deal-card.drag-error {
+          border-color: #d9534f !important;
+          animation: shake 0.3s ease;
+      }
+      @keyframes shake {
+          0%, 100% { transform: translateX(0); }
+          25% { transform: translateX(-4px); }
+          75% { transform: translateX(4px); }
+      }
+  </style>
+
+  <script>
+      (function() {
+          var board = document.getElementById('pipeline-board');
+          if (!board) return;
+
+          var draggedCard = null;
+          var sourceZone = null;
+
+          board.addEventListener('dragstart', function(e) {
+              var card = e.target.closest('.board-deal-card');
+              if (!card) return;
+              draggedCard = card;
+              sourceZone = card.closest('.board-drop-zone');
+              card.classList.add('dragging');
+              e.dataTransfer.effectAllowed = 'move';
+              e.dataTransfer.setData('text/plain', card.dataset.dealId);
+          });
+
+          board.addEventListener('dragend', function(e) {
+              if (draggedCard) {
+                  draggedCard.classList.remove('dragging');
+              }
+              document.querySelectorAll('.board-drop-zone.drag-over').forEach(function(z) {
+                  z.classList.remove('drag-over');
+              });
+              draggedCard = null;
+              sourceZone = null;
+          });
+
+          board.addEventListener('dragover', function(e) {
+              var zone = e.target.closest('.board-drop-zone');
+              if (!zone || !draggedCard) return;
+              e.preventDefault();
+              e.dataTransfer.dropEffect = 'move';
+              zone.classList.add('drag-over');
+          });
+
+          board.addEventListener('dragleave', function(e) {
+              var zone = e.target.closest('.board-drop-zone');
+              if (!zone) return;
+              var related = e.relatedTarget ? e.relatedTarget.closest('.board-drop-zone') : null;
+              if (related !== zone) {
+                  zone.classList.remove('drag-over');
+              }
+          });
+
+          board.addEventListener('drop', function(e) {
+              e.preventDefault();
+              var zone = e.target.closest('.board-drop-zone');
+              if (!zone || !draggedCard) return;
+              zone.classList.remove('drag-over');
+
+              var newStageId = zone.dataset.stageId;
+              var oldStageId = sourceZone ? sourceZone.dataset.stageId : null;
+
+              if (newStageId === oldStageId) return;
+
+              var dealId = draggedCard.dataset.dealId;
+
+              var emptyMsg = zone.querySelector('.board-empty-message');
+              if (emptyMsg) emptyMsg.remove();
+
+              zone.appendChild(draggedCard);
+
+              var url = '{{ path("mautic_mautomic_crm_deal_stage_change", {"objectId": "__DEAL_ID__"}) }}'.replace('__DEAL_ID__', dealId);
+
+              var xhr = new XMLHttpRequest();
+              xhr.open('POST', url, true);
+              xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+              xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
+              xhr.setRequestHeader('X-CSRF-Token', typeof mauticAjaxCsrf !== 'undefined' ? mauticAjaxCsrf : '');
+              xhr.onload = function() {
+                  if (xhr.status >= 200 && xhr.status < 300) {
+                      try {
+                          var data = JSON.parse(xhr.responseText);
+                          if (!data.success) {
+                              revertCard();
+                          }
+                      } catch (err) {
+                          revertCard();
+                      }
+                  } else {
+                      revertCard();
+                  }
+              };
+              xhr.onerror = function() {
+                  revertCard();
+              };
+              xhr.send('stageId=' + encodeURIComponent(newStageId));
+
+              var capturedCard = draggedCard;
+              var capturedSource = sourceZone;
+
+              function revertCard() {
+                  capturedCard.classList.add('drag-error');
+                  setTimeout(function() { capturedCard.classList.remove('drag-error'); }, 600);
+                  if (capturedSource) {
+                      capturedSource.appendChild(capturedCard);
+                  }
+                  if (zone.querySelectorAll('.board-deal-card').length === 0) {
+                      var p = document.createElement('p');
+                      p.className = 'text-muted text-center board-empty-message';
+                      p.style.margin = '20px 0';
+                      p.textContent = '{{ 'mautomic_crm.pipeline.board.no_deals'|trans }}';
+                      zone.appendChild(p);
+                  }
+              }
+          });
+      })();
+  </script>
 {% endblock %}
