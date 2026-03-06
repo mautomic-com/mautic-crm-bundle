@@ -33,7 +33,7 @@
 
 {% block content %}
   <div class="box-layout">
-      <div class="col-md-9 height-auto">
+      <div class="col-md-12 height-auto">
           <div>
               {% include '@MauticCore/Helper/description--expanded.html.twig' with {'description': item.description} %}
 
@@ -153,12 +153,6 @@
                       {% endif %}
                   </div>
               </div>
-          </div>
-      </div>
-
-      <div class="col-md-3 bdr-l height-auto">
-          <div class="panel shd-none bdr-rds-0 bdr-w-0 mb-0">
-              {{ include('@MauticCore/Helper/recentactivity.html.twig', {'logs': logs}) }}
           </div>
       </div>
   </div>
