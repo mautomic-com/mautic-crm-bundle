@@ -38,48 +38,19 @@
               {% include '@MauticCore/Helper/description--expanded.html.twig' with {'description': item.description} %}
 
               <ul class="nav nav-tabs nav-tabs-contained pr-md pl-md">
-                  <li>
-                      <a href="#stages-tab" role="tab" data-toggle="tab">
-                          {{ 'mautomic_crm.pipeline.stages_tab'|trans }}
-                      </a>
-                  </li>
                   <li class="active">
                       <a href="#board-tab" role="tab" data-toggle="tab">
                           {{ 'mautomic_crm.pipeline.board'|trans }}
                       </a>
                   </li>
+                  <li>
+                      <a href="#stages-tab" role="tab" data-toggle="tab">
+                          {{ 'mautomic_crm.pipeline.stages_tab'|trans }}
+                      </a>
+                  </li>
               </ul>
 
               <div class="tab-content pa-md">
-                  {# Stages Table Tab #}
-                  <div class="tab-pane fade" id="stages-tab">
-                      <h4>{{ 'mautomic_crm.pipeline.stages'|trans }}</h4>
-                      {% if item.stages|length > 0 %}
-                          <table class="table table-hover">
-                              <thead>
-                                  <tr>
-                                      <th>{{ 'mautomic_crm.stage.name'|trans }}</th>
-                                      <th>{{ 'mautomic_crm.stage.order'|trans }}</th>
-                                      <th>{{ 'mautomic_crm.stage.probability'|trans }}</th>
-                                      <th>{{ 'mautomic_crm.stage.type'|trans }}</th>
-                                  </tr>
-                              </thead>
-                              <tbody>
-                              {% for stage in item.stages %}
-                                  <tr>
-                                      <td>{{ stage.name }}</td>
-                                      <td>{{ stage.order }}</td>
-                                      <td>{{ stage.probability }}%</td>
-                                      <td>{{ ('mautomic_crm.stage.type.' ~ stage.type)|trans }}</td>
-                                  </tr>
-                              {% endfor %}
-                              </tbody>
-                          </table>
-                      {% else %}
-                          <p class="text-muted">{{ 'mautomic_crm.pipeline.no_stages'|trans }}</p>
-                      {% endif %}
-                  </div>
-
                   {# Board View Tab #}
                   <div class="tab-pane fade in active" id="board-tab">
                       {% if allPipelines is defined and allPipelines|length > 1 %}
@@ -148,6 +119,35 @@
                                   </div>
                               {% endfor %}
                           </div>
+                      {% else %}
+                          <p class="text-muted">{{ 'mautomic_crm.pipeline.no_stages'|trans }}</p>
+                      {% endif %}
+                  </div>
+
+                  {# Stages Table Tab #}
+                  <div class="tab-pane fade" id="stages-tab">
+                      <h4>{{ 'mautomic_crm.pipeline.stages'|trans }}</h4>
+                      {% if item.stages|length > 0 %}
+                          <table class="table table-hover">
+                              <thead>
+                                  <tr>
+                                      <th>{{ 'mautomic_crm.stage.name'|trans }}</th>
+                                      <th>{{ 'mautomic_crm.stage.order'|trans }}</th>
+                                      <th>{{ 'mautomic_crm.stage.probability'|trans }}</th>
+                                      <th>{{ 'mautomic_crm.stage.type'|trans }}</th>
+                                  </tr>
+                              </thead>
+                              <tbody>
+                              {% for stage in item.stages %}
+                                  <tr>
+                                      <td>{{ stage.name }}</td>
+                                      <td>{{ stage.order }}</td>
+                                      <td>{{ stage.probability }}%</td>
+                                      <td>{{ ('mautomic_crm.stage.type.' ~ stage.type)|trans }}</td>
+                                  </tr>
+                              {% endfor %}
+                              </tbody>
+                          </table>
                       {% else %}
                           <p class="text-muted">{{ 'mautomic_crm.pipeline.no_stages'|trans }}</p>
                       {% endif %}
