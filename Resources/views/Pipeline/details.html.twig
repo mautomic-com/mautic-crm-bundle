@@ -38,12 +38,12 @@
               {% include '@MauticCore/Helper/description--expanded.html.twig' with {'description': item.description} %}
 
               <ul class="nav nav-tabs nav-tabs-contained pr-md pl-md">
-                  <li class="active">
+                  <li>
                       <a href="#stages-tab" role="tab" data-toggle="tab">
                           {{ 'mautomic_crm.pipeline.stages_tab'|trans }}
                       </a>
                   </li>
-                  <li>
+                  <li class="active">
                       <a href="#board-tab" role="tab" data-toggle="tab">
                           {{ 'mautomic_crm.pipeline.board'|trans }}
                       </a>
@@ -52,7 +52,7 @@
 
               <div class="tab-content pa-md">
                   {# Stages Table Tab #}
-                  <div class="tab-pane fade in active" id="stages-tab">
+                  <div class="tab-pane fade" id="stages-tab">
                       <h4>{{ 'mautomic_crm.pipeline.stages'|trans }}</h4>
                       {% if item.stages|length > 0 %}
                           <table class="table table-hover">
@@ -81,7 +81,7 @@
                   </div>
 
                   {# Board View Tab #}
-                  <div class="tab-pane fade" id="board-tab">
+                  <div class="tab-pane fade in active" id="board-tab">
                       {% if allPipelines is defined and allPipelines|length > 1 %}
                           <div class="mb-md">
                               <label for="pipeline-selector">{{ 'mautomic_crm.pipeline.board.switch_pipeline'|trans }}:</label>
