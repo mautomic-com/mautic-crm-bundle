@@ -11,6 +11,10 @@ use Mautic\CoreBundle\Form\EventListener\CleanFormSubscriber;
 use Mautic\CoreBundle\Form\EventListener\FormExitSubscriber;
 use Mautic\CoreBundle\Form\Type\FormButtonsType;
 use Mautic\CoreBundle\Form\Type\YesNoButtonGroupType;
+use Mautic\LeadBundle\Entity\Company;
+use Mautic\LeadBundle\Entity\CompanyRepository;
+use Mautic\LeadBundle\Entity\Lead;
+use Mautic\LeadBundle\Entity\LeadRepository;
 use Mautic\UserBundle\Entity\User;
 use Mautic\UserBundle\Form\Type\UserListType;
 use MauticPlugin\MautomicCrmBundle\Entity\Deal;
@@ -108,6 +112,33 @@ class DealType extends AbstractType
             'required'      => true,
             'query_builder' => fn (StageRepository $repo) => $repo->createQueryBuilder('s')
                 ->orderBy('s.order', 'ASC'),
+        ]);
+
+        $builder->add('contact', EntityType::class, [
+            'class'         => Lead::class,
+            'choice_label'  => fn (Lead $lead) => $lead->getName() ?: $lead->getEmail() ?: 'Contact #'.$lead->getId(),
+            'label'         => 'mautomic_crm.deal.contact',
+            'label_attr'    => ['class' => 'control-label'],
+            'attr'          => ['class' => 'form-control'],
+            'required'      => false,
+            'placeholder'   => '',
+            'query_builder' => fn (LeadRepository $repo) => $repo->createQueryBuilder('l')
+                ->orderBy('l.lastname', 'ASC')
+                ->addOrderBy('l.firstname', 'ASC')
+                ->setMaxResults(200),
+        ]);
+
+        $builder->add('company', EntityType::class, [
+            'class'         => Company::class,
+            'choice_label'  => 'name',
+            'label'         => 'mautomic_crm.deal.company',
+            'label_attr'    => ['class' => 'control-label'],
+            'attr'          => ['class' => 'form-control'],
+            'required'      => false,
+            'placeholder'   => '',
+            'query_builder' => fn (CompanyRepository $repo) => $repo->createQueryBuilder('c')
+                ->orderBy('c.name', 'ASC')
+                ->setMaxResults(200),
         ]);
 
         $builder->add(
