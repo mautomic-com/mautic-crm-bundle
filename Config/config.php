@@ -124,16 +124,23 @@ return [
                 'priority' => 20,
             ],
             'mautomic_crm.tasks' => [
-                'route'    => 'mautic_mautomic_crm_task_index',
-                'access'   => 'mautomic_crm:tasks:view',
-                'parent'   => 'mautomic_crm.crm',
-                'priority' => 30,
-            ],
-            'mautomic_crm.task_queues' => [
-                'route'    => 'mautic_mautomic_crm_task_queue_index',
-                'access'   => 'mautomic_crm:tasks:view',
-                'parent'   => 'mautomic_crm.crm',
-                'priority' => 35,
+                'id'        => 'mautomic_crm_tasks',
+                'iconClass' => 'ri-task-line',
+                'access'    => 'mautomic_crm:tasks:view',
+                'parent'    => 'mautomic_crm.crm',
+                'priority'  => 30,
+                'children'  => [
+                    'mautomic_crm.task.list' => [
+                        'route'    => 'mautic_mautomic_crm_task_index',
+                        'access'   => 'mautomic_crm:tasks:view',
+                        'priority' => 10,
+                    ],
+                    'mautomic_crm.task_queues' => [
+                        'route'    => 'mautic_mautomic_crm_task_queue_index',
+                        'access'   => 'mautomic_crm:tasks:view',
+                        'priority' => 20,
+                    ],
+                ],
             ],
         ],
         'admin' => [
