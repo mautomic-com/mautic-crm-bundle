@@ -42,6 +42,14 @@ return [
                 'path'       => '/mautomic/tasks/{objectAction}/{objectId}',
                 'controller' => 'MauticPlugin\MautomicCrmBundle\Controller\TaskController::executeAction',
             ],
+            'mautic_mautomic_crm_task_queue_index' => [
+                'path'       => '/mautomic/task-queues/{page}',
+                'controller' => 'MauticPlugin\MautomicCrmBundle\Controller\TaskQueueController::indexAction',
+            ],
+            'mautic_mautomic_crm_task_queue_action' => [
+                'path'       => '/mautomic/task-queues/{objectAction}/{objectId}',
+                'controller' => 'MauticPlugin\MautomicCrmBundle\Controller\TaskQueueController::executeAction',
+            ],
             'mautic_mautomic_crm_note_action' => [
                 'path'       => '/mautomic/notes/{objectAction}/{objectId}',
                 'controller' => 'MauticPlugin\MautomicCrmBundle\Controller\NoteController::executeAction',
@@ -80,6 +88,12 @@ return [
                 'path'            => '/mautomic/notes',
                 'controller'      => MauticPlugin\MautomicCrmBundle\Controller\Api\NoteApiController::class,
             ],
+            'mautomic_api_task_queues' => [
+                'standard_entity' => true,
+                'name'            => 'mautomic_task_queues',
+                'path'            => '/mautomic/task-queues',
+                'controller'      => MauticPlugin\MautomicCrmBundle\Controller\Api\TaskQueueApiController::class,
+            ],
             'mautomic_api_deal_fields' => [
                 'standard_entity' => true,
                 'name'            => 'mautomic_deal_fields',
@@ -114,6 +128,12 @@ return [
                 'access'   => 'mautomic_crm:tasks:view',
                 'parent'   => 'mautomic_crm.crm',
                 'priority' => 30,
+            ],
+            'mautomic_crm.task_queues' => [
+                'route'    => 'mautic_mautomic_crm_task_queue_index',
+                'access'   => 'mautomic_crm:tasks:view',
+                'parent'   => 'mautomic_crm.crm',
+                'priority' => 35,
             ],
         ],
         'admin' => [

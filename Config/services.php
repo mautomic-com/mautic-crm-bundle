@@ -25,4 +25,5 @@ return function (ContainerConfigurator $configurator): void {
     $services->alias('mautic.mautomic_crm.model.task', MauticPlugin\MautomicCrmBundle\Model\TaskModel::class)->public();
     $services->alias('mautic.mautomic_crm.model.note', MauticPlugin\MautomicCrmBundle\Model\NoteModel::class)->public();
     $services->alias('mautic.mautomic_crm.model.deal_field', MauticPlugin\MautomicCrmBundle\Model\DealFieldModel::class)->public();
+    $services->alias('mautic.mautomic_crm.model.task_queue', MauticPlugin\MautomicCrmBundle\Model\TaskQueueModel::class)->public();
 };

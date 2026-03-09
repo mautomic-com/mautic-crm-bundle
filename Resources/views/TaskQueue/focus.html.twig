@@ -1,0 +1,105 @@
+{% extends '@MauticCore/Default/content.html.twig' %}
+
+{% block mauticContent %}mautomic_crm_task_queue{% endblock %}
+
+{% block headerTitle %}{{ 'mautomic_crm.task_queue.focus_mode'|trans }}: {{ queue.name }}{% endblock %}
+
+{% block content %}
+<div class="pa-md">
+    {# Progress bar #}
+    {% set progressPercent = stats.total > 0 ? ((stats.completed + stats.skipped) / stats.total * 100)|round : 0 %}
+    <div class="mb-lg">
+        <div class="progress" style="height: 24px;">
+            <div class="progress-bar progress-bar-success" role="progressbar" style="width: {{ progressPercent }}%; min-width: 2em;" id="focusProgressBar">
+                {{ stats.completed + stats.skipped }}/{{ stats.total }}
+            </div>
+        </div>
+        <div class="text-center text-muted mt-xs">
+            <small>
+                {{ 'mautomic_crm.task_queue.focus.completed'|trans({'%count%': stats.completed}) }} &middot;
+                {{ 'mautomic_crm.task_queue.focus.skipped'|trans({'%count%': stats.skipped}) }} &middot;
+                {{ 'mautomic_crm.task_queue.focus.pending'|trans({'%count%': stats.pending}) }}
+            </small>
+        </div>
+    </div>
+
+    {% if currentItem %}
+        {% set task = currentItem.task %}
+        <div class="panel panel-default" id="focusCard">
+            <div class="panel-heading">
+                <h3 class="panel-title">
+                    <strong>{{ task.title }}</strong>
+                    <span class="pull-right">
+                        <span class="label label-{{ task.priority == 'high' ? 'danger' : (task.priority == 'low' ? 'default' : 'info') }}">
+                            {{ ('mautomic_crm.task.priority.' ~ task.priority)|trans }}
+                        </span>
+                    </span>
+                </h3>
+            </div>
+            <div class="panel-body">
+                {% if task.description %}
+                    <p>{{ task.description }}</p>
+                    <hr>
+                {% endif %}
+
+                <div class="row">
+                    <div class="col-md-4">
+                        <strong>{{ 'mautomic_crm.task.due_date'|trans }}:</strong>
+                        {% if task.dueDate %}
+                            <span class="{{ task.dueDate < date() ? 'text-danger fw-b' : '' }}">
+                                {{ task.dueDate|date('Y-m-d H:i') }}
+                                {% if task.dueDate < date() %} ({{ 'mautomic_crm.task.overdue'|trans }}){% endif %}
+                            </span>
+                        {% else %}
+                            -
+                        {% endif %}
+                    </div>
+                    <div class="col-md-4">
+                        <strong>{{ 'mautomic_crm.task.deal'|trans }}:</strong>
+                        {% if task.deal %}
+                            <a data-toggle="ajax" href="{{ path('mautic_mautomic_crm_deal_action', {'objectAction': 'view', 'objectId': task.deal.id}) }}">
+                                {{ task.deal.name }}
+                            </a>
+                        {% else %}
+                            -
+                        {% endif %}
+                    </div>
+                    <div class="col-md-4">
+                        <strong>{{ 'mautomic_crm.task.contact'|trans }}:</strong>
+                        {% if task.contact %}
+                            <a data-toggle="ajax" href="{{ path('mautic_contact_action', {'objectAction': 'view', 'objectId': task.contact.id}) }}">
+                                {{ task.contact.name }}
+                            </a>
+                        {% else %}
+                            -
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            <div class="panel-footer text-center">
+                <form method="post" action="{{ path('mautic_mautomic_crm_task_queue_action', {'objectAction': 'focusUpdate', 'objectId': queue.id}) }}">
+                    <input type="hidden" name="itemId" value="{{ currentItem.id }}">
+                    <button type="submit" name="action" value="completed" class="btn btn-success btn-lg mr-sm">
+                        <i class="ri-check-line"></i> {{ 'mautomic_crm.task_queue.focus.done'|trans }}
+                    </button>
+                    <button type="submit" name="action" value="skipped" class="btn btn-warning btn-lg">
+                        <i class="ri-skip-forward-line"></i> {{ 'mautomic_crm.task_queue.focus.skip'|trans }}
+                    </button>
+                </form>
+            </div>
+        </div>
+    {% else %}
+        {# Queue completed #}
+        <div class="text-center pa-lg">
+            <h2 class="text-success"><i class="ri-checkbox-circle-line"></i></h2>
+            <h3>{{ 'mautomic_crm.task_queue.focus.all_done'|trans }}</h3>
+            <p class="text-muted">
+                {{ 'mautomic_crm.task_queue.focus.summary'|trans({'%completed%': stats.completed, '%skipped%': stats.skipped, '%total%': stats.total}) }}
+            </p>
+            <a class="btn btn-default mt-md" data-toggle="ajax" href="{{ path('mautic_mautomic_crm_task_queue_action', {'objectAction': 'view', 'objectId': queue.id}) }}">
+                {{ 'mautomic_crm.task_queue.back_to_queue'|trans }}
+            </a>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

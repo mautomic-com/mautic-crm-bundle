@@ -110,6 +110,14 @@ class TaskType extends AbstractType
             ],
         ]);
 
+        $builder->add('reminderDate', DateTimeType::class, [
+            'label'      => 'mautomic_crm.task.reminder_date',
+            'label_attr' => ['class' => 'control-label'],
+            'attr'       => ['class' => 'form-control'],
+            'widget'     => 'single_text',
+            'required'   => false,
+        ]);
+
         $builder->add(
             $builder->create(
                 'owner',

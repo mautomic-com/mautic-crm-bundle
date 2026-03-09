@@ -33,6 +33,10 @@ class Task extends FormEntity
 
     private ?User $owner = null;
 
+    private ?\DateTimeInterface $reminderDate = null;
+
+    private bool $reminderSent = false;
+
     public function __clone()
     {
         $this->id = null;
@@ -65,6 +69,15 @@ class Task extends FormEntity
 
         $builder->addField('priority', 'string');
 
+        $builder->createField('reminderDate', 'datetime')
+            ->columnName('reminder_date')
+            ->nullable()
+            ->build();
+
+        $builder->createField('reminderSent', 'boolean')
+            ->columnName('reminder_sent')
+            ->build();
+
         $builder->createManyToOne('deal', Deal::class)
             ->addJoinColumn('deal_id', 'id', true, false, 'SET NULL')
             ->build();
@@ -89,7 +102,7 @@ class Task extends FormEntity
     {
         $metadata->setGroupPrefix('task')
             ->addListProperties(['id', 'title', 'dueDate', 'status', 'priority'])
-            ->addProperties(['description', 'deal', 'contact', 'owner'])
+            ->addProperties(['description', 'deal', 'contact', 'owner', 'reminderDate', 'reminderSent'])
             ->build();
     }
 
@@ -203,6 +216,37 @@ class Task extends FormEntity
     {
         $this->isChanged('owner', $owner);
         $this->owner = $owner;
+
+        return $this;
+    }
+
+    public function getReminderDate(): ?\DateTimeInterface
+    {
+        return $this->reminderDate;
+    }
+
+    public function setReminderDate(?\DateTimeInterface $reminderDate): self
+    {
+        $this->isChanged('reminderDate', $reminderDate);
+        $this->reminderDate = $reminderDate;
+
+        return $this;
+    }
+
+    public function isReminderSent(): bool
+    {
+        return $this->reminderSent;
+    }
+
+    public function getReminderSent(): bool
+    {
+        return $this->reminderSent;
+    }
+
+    public function setReminderSent(bool $reminderSent): self
+    {
+        $this->isChanged('reminderSent', $reminderSent);
+        $this->reminderSent = $reminderSent;
 
         return $this;
     }
