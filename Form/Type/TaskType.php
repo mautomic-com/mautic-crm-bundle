@@ -97,6 +97,7 @@ class TaskType extends AbstractType
                 'mautomic_crm.task.priority.low'    => 'low',
                 'mautomic_crm.task.priority.normal' => 'normal',
                 'mautomic_crm.task.priority.high'   => 'high',
+                'mautomic_crm.task.priority.urgent' => 'urgent',
             ],
         ]);
 
