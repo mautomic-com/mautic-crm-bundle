@@ -27,7 +27,7 @@ Harness path from this directory: `../../../mautic-crm-harness/`
 ## Before Starting Any Work
 
 1. Read the harness `AGENTS.md`: `../../../mautic-crm-harness/AGENTS.md`
-2. Read the feature spec you're implementing: `../../../mautic-crm-harness/docs/exec-plans/backlog/`
+2. Read the feature spec from GitHub: `gh issue view <NUMBER> --repo mautomic-com/mautic-crm-bundle`
 3. Read known pitfalls in harness AGENTS.md "Known Patterns & Pitfalls" section
 
 ## Mandatory Workflow
