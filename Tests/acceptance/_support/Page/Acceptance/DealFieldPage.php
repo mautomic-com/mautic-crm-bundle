@@ -7,8 +7,8 @@ namespace MautomicCrmTests\Page\Acceptance;
 class DealFieldPage
 {
     // URLs
-    public static string $URL    = '/s/mautomic/deal-fields';
-    public static string $newURL = '/s/mautomic/deal-fields/new';
+    public static string $URL    = '/s/mautomic-crm/settings/deal-fields';
+    public static string $newURL = '/s/mautomic-crm/settings/deal-fields/new';
 
     // List view
     public static string $newButton = '#new';
@@ -36,6 +36,6 @@ class DealFieldPage
 
     public static function editURL(int $id): string
     {
-        return "/s/mautomic/deal-fields/edit/{$id}";
+        return "/s/mautomic-crm/settings/deal-fields/edit/{$id}";
     }
 }

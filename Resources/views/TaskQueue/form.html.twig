@@ -1,12 +1,12 @@
 {% extends '@MauticCore/Default/content.html.twig' %}
 
-{% block mauticContent %}mautomic_crm_task{% endblock %}
+{% block mauticContent %}mautomic_crm_task_queue{% endblock %}
 
 {% block headerTitle %}
   {% if entity.id %}
-    {{ 'mautomic_crm.task.edit'|trans({'%name%': entity.title|trans}) }}
+    {{ 'mautomic_crm.task_queue.edit'|trans({'%name%': entity.name|trans}) }}
   {% else %}
-    {{ 'mautomic_crm.task.new'|trans }}
+    {{ 'mautomic_crm.task_queue.new'|trans }}
   {% endif %}
 {% endblock %}
 
@@ -15,20 +15,14 @@
     <div class="box-layout">
         <div class="col-md-9 height-auto bdr-r pa-md">
             <div class="row">
-                <div class="col-md-12">{{ form_row(form.title) }}</div>
+                <div class="col-md-12">{{ form_row(form.name) }}</div>
             </div>
             <div class="row">
                 <div class="col-md-12">{{ form_row(form.description) }}</div>
             </div>
             <div class="row">
-                <div class="col-md-6">{{ form_row(form.deal) }}</div>
-                <div class="col-md-6">{{ form_row(form.contact) }}</div>
-            </div>
-            <div class="row">
-                <div class="col-md-3">{{ form_row(form.dueDate) }}</div>
-                <div class="col-md-3">{{ form_row(form.priority) }}</div>
-                <div class="col-md-3">{{ form_row(form.status) }}</div>
-                <div class="col-md-3">{{ form_row(form.reminderDate) }}</div>
+                <div class="col-md-6">{{ form_row(form.sortOrder) }}</div>
+                <div class="col-md-6">{{ form_row(form.isShared) }}</div>
             </div>
         </div>
         <div class="col-md-3 height-auto">

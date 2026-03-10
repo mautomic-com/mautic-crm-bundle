@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace MauticPlugin\MautomicCrmBundle\Controller;
 
 use Mautic\CoreBundle\Controller\AbstractStandardFormController;
+use MauticPlugin\MautomicCrmBundle\Model\TaskQueueModel;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -85,5 +86,61 @@ class TaskController extends AbstractStandardFormController
     public function batchDeleteAction(Request $request)
     {
         return parent::batchDeleteStandard($request);
+    }
+
+    /**
+     * @return JsonResponse|RedirectResponse|Response
+     */
+    public function batchAddToQueueAction(Request $request)
+    {
+        $page      = $request->getSession()->get('mautic.mautomic_crm_task.page', 1);
+        $returnUrl = $this->generateUrl($this->getIndexRoute(), ['page' => $page]);
+        $flashes   = [];
+
+        if ('POST' === $request->getMethod()) {
+            $queueId = (int) $request->query->get('queueId', '0');
+            $ids     = json_decode($request->query->get('ids', '[]'), true);
+
+            $queueModel = $this->getModel('mautomic_crm.task_queue');
+            \assert($queueModel instanceof TaskQueueModel);
+
+            $queue = $queueModel->getEntity($queueId);
+
+            if (null === $queue || 0 === $queueId) {
+                $flashes[] = [
+                    'type' => 'error',
+                    'msg'  => 'mautomic_crm.task_queue.error.notfound',
+                ];
+            } elseif (!\is_array($ids) || 0 === \count($ids)) {
+                $flashes[] = [
+                    'type' => 'error',
+                    'msg'  => 'mautomic_crm.task_queue.error.no_tasks',
+                ];
+            } else {
+                $taskIds = array_map('intval', $ids);
+                $queueModel->addTasksToQueue($queue, $taskIds);
+
+                $flashes[] = [
+                    'type'    => 'notice',
+                    'msg'     => 'mautomic_crm.task_queue.batch_add.success',
+                    'msgVars' => [
+                        '%count%' => \count($taskIds),
+                        '%queue%' => $queue->getName(),
+                    ],
+                ];
+            }
+        }
+
+        return $this->postActionRedirect(
+            array_merge([
+                'returnUrl'       => $returnUrl,
+                'viewParameters'  => ['page' => $page],
+                'contentTemplate' => self::class.'::indexAction',
+                'passthroughVars' => [
+                    'mauticContent' => 'mautomic_crm_task',
+                ],
+                'flashes' => $flashes,
+            ])
+        );
     }
 }

@@ -66,4 +66,67 @@ class TaskRepository extends CommonRepository
             ->getQuery()
             ->getResult();
     }
+
+    /**
+     * @return Task[]
+     */
+    public function findTasksNeedingReminder(\DateTimeInterface $now): array
+    {
+        return $this->createQueryBuilder('t')
+            ->where('t.reminderDate IS NOT NULL')
+            ->andWhere('t.reminderDate <= :now')
+            ->andWhere('t.reminderSent = :notSent')
+            ->andWhere('t.status = :open')
+            ->setParameter('now', $now)
+            ->setParameter('notSent', false)
+            ->setParameter('open', 'open')
+            ->orderBy('t.reminderDate', 'ASC')
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
+     * @return Task[]
+     */
+    public function findOverdueTasks(?int $ownerId = null): array
+    {
+        $qb = $this->createQueryBuilder('t')
+            ->where('t.dueDate < :now')
+            ->andWhere('t.status = :open')
+            ->setParameter('now', new \DateTime())
+            ->setParameter('open', 'open')
+            ->orderBy('t.dueDate', 'ASC');
+
+        if (null !== $ownerId) {
+            $qb->andWhere('t.owner = :ownerId')
+                ->setParameter('ownerId', $ownerId);
+        }
+
+        return $qb->getQuery()->getResult();
+    }
+
+    /**
+     * @return Task[]
+     */
+    public function findDueTodayTasks(?int $ownerId = null): array
+    {
+        $start = new \DateTime('today');
+        $end   = new \DateTime('tomorrow');
+
+        $qb = $this->createQueryBuilder('t')
+            ->where('t.dueDate >= :start')
+            ->andWhere('t.dueDate < :end')
+            ->andWhere('t.status = :open')
+            ->setParameter('start', $start)
+            ->setParameter('end', $end)
+            ->setParameter('open', 'open')
+            ->orderBy('t.dueDate', 'ASC');
+
+        if (null !== $ownerId) {
+            $qb->andWhere('t.owner = :ownerId')
+                ->setParameter('ownerId', $ownerId);
+        }
+
+        return $qb->getQuery()->getResult();
+    }
 }

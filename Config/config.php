@@ -42,16 +42,28 @@ return [
                 'path'       => '/mautomic/tasks/{objectAction}/{objectId}',
                 'controller' => 'MauticPlugin\MautomicCrmBundle\Controller\TaskController::executeAction',
             ],
+            'mautic_mautomic_crm_task_queue_index' => [
+                'path'       => '/mautomic/task-queues/{page}',
+                'controller' => 'MauticPlugin\MautomicCrmBundle\Controller\TaskQueueController::indexAction',
+            ],
+            'mautic_mautomic_crm_task_queue_action' => [
+                'path'       => '/mautomic/task-queues/{objectAction}/{objectId}',
+                'controller' => 'MauticPlugin\MautomicCrmBundle\Controller\TaskQueueController::executeAction',
+            ],
             'mautic_mautomic_crm_note_action' => [
                 'path'       => '/mautomic/notes/{objectAction}/{objectId}',
                 'controller' => 'MauticPlugin\MautomicCrmBundle\Controller\NoteController::executeAction',
             ],
+            'mautic_mautomic_crm_settings_index' => [
+                'path'       => '/mautomic-crm/settings',
+                'controller' => 'MauticPlugin\MautomicCrmBundle\Controller\SettingsController::indexAction',
+            ],
             'mautic_mautomic_crm_deal_field_index' => [
-                'path'       => '/mautomic/deal-fields/{page}',
+                'path'       => '/mautomic-crm/settings/deal-fields/{page}',
                 'controller' => 'MauticPlugin\MautomicCrmBundle\Controller\DealFieldController::indexAction',
             ],
             'mautic_mautomic_crm_deal_field_action' => [
-                'path'       => '/mautomic/deal-fields/{objectAction}/{objectId}',
+                'path'       => '/mautomic-crm/settings/deal-fields/{objectAction}/{objectId}',
                 'controller' => 'MauticPlugin\MautomicCrmBundle\Controller\DealFieldController::executeAction',
             ],
         ],
@@ -79,6 +91,12 @@ return [
                 'name'            => 'mautomic_notes',
                 'path'            => '/mautomic/notes',
                 'controller'      => MauticPlugin\MautomicCrmBundle\Controller\Api\NoteApiController::class,
+            ],
+            'mautomic_api_task_queues' => [
+                'standard_entity' => true,
+                'name'            => 'mautomic_task_queues',
+                'path'            => '/mautomic/task-queues',
+                'controller'      => MauticPlugin\MautomicCrmBundle\Controller\Api\TaskQueueApiController::class,
             ],
             'mautomic_api_deal_fields' => [
                 'standard_entity' => true,
@@ -115,12 +133,18 @@ return [
                 'parent'   => 'mautomic_crm.crm',
                 'priority' => 30,
             ],
+            'mautomic_crm.task_queues' => [
+                'route'    => 'mautic_mautomic_crm_task_queue_index',
+                'access'   => 'mautomic_crm:tasks:view',
+                'parent'   => 'mautomic_crm.crm',
+                'priority' => 31,
+            ],
         ],
         'admin' => [
-            'mautomic_crm.deal_field.list' => [
-                'id'        => 'mautomic_crm_deal_fields',
-                'iconClass' => 'ri-input-field',
-                'route'     => 'mautic_mautomic_crm_deal_field_index',
+            'mautomic_crm.settings' => [
+                'id'        => 'mautomic_crm_settings',
+                'iconClass' => 'ri-settings-3-line',
+                'route'     => 'mautic_mautomic_crm_settings_index',
                 'access'    => 'mautomic_crm:deals:view',
                 'priority'  => 18,
             ],

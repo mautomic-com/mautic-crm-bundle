@@ -46,6 +46,17 @@
                   <td>{{ ('mautomic_crm.task.status.' ~ item.status)|trans }}</td>
               </tr>
               <tr>
+                  <td><span class="fw-b">{{ 'mautomic_crm.task.reminder_date'|trans }}</span></td>
+                  <td>
+                      {% if item.reminderDate %}
+                          {{ item.reminderDate|date('Y-m-d H:i') }}
+                          {% if item.reminderSent %}
+                              <span class="label label-success">{{ 'mautomic_crm.task.reminder_sent'|trans }}</span>
+                          {% endif %}
+                      {% else %}-{% endif %}
+                  </td>
+              </tr>
+              <tr>
                   <td><span class="fw-b">{{ 'mautomic_crm.task.deal'|trans }}</span></td>
                   <td>{% if item.deal %}
                       <a data-toggle="ajax" href="{{ path('mautic_mautomic_crm_deal_action', {'objectAction': 'view', 'objectId': item.deal.id}) }}">
