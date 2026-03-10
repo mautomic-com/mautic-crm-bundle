@@ -98,7 +98,7 @@ class SendTaskRemindersCommandTest extends TestCase
     private function createCommandTester(SendTaskRemindersCommand $command): CommandTester
     {
         $app = new Application();
-        $app->add($command);
+        $app->addCommand($command);
 
         return new CommandTester($app->find('mautomic:tasks:send-reminders'));
     }
