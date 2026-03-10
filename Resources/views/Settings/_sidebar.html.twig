@@ -1,0 +1,11 @@
+{# Settings sidebar navigation #}
+{% set activeTab = activeTab|default('deal-fields') %}
+
+<ul class="list-group list-group-tabs">
+    <li class="list-group-item {% if activeTab == 'deal-fields' %}in active{% endif %}">
+        <a href="{{ path('mautic_mautomic_crm_deal_field_index') }}" class="list-group-item-text steps" data-toggle="ajax">
+            <i class="ri-input-field mr-xs"></i>
+            {{ 'mautomic_crm.deal_field.list'|trans }}
+        </a>
+    </li>
+</ul>

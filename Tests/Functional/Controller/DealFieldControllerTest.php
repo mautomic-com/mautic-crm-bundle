@@ -13,13 +13,13 @@ class DealFieldControllerTest extends MauticMysqlTestCase
 {
     public function testDealFieldListPage(): void
     {
-        $this->client->request(Request::METHOD_GET, '/s/mautomic/deal-fields');
+        $this->client->request(Request::METHOD_GET, '/s/mautomic-crm/settings/deal-fields');
         $this->assertSame(Response::HTTP_OK, $this->client->getResponse()->getStatusCode());
     }
 
     public function testCreateDealField(): void
     {
-        $crawler = $this->client->request(Request::METHOD_GET, '/s/mautomic/deal-fields/new');
+        $crawler = $this->client->request(Request::METHOD_GET, '/s/mautomic-crm/settings/deal-fields/new');
         $this->assertSame(Response::HTTP_OK, $this->client->getResponse()->getStatusCode());
 
         $form = $crawler->selectButton('Save')->form([
@@ -47,7 +47,7 @@ class DealFieldControllerTest extends MauticMysqlTestCase
         $this->em->persist($field);
         $this->em->flush();
 
-        $crawler = $this->client->request(Request::METHOD_GET, '/s/mautomic/deal-fields/edit/'.$field->getId());
+        $crawler = $this->client->request(Request::METHOD_GET, '/s/mautomic-crm/settings/deal-fields/edit/'.$field->getId());
         $this->assertSame(Response::HTTP_OK, $this->client->getResponse()->getStatusCode());
 
         $form = $crawler->selectButton('Save')->form([
@@ -73,7 +73,7 @@ class DealFieldControllerTest extends MauticMysqlTestCase
 
         $fieldId = $field->getId();
 
-        $this->client->request(Request::METHOD_POST, '/s/mautomic/deal-fields/delete/'.$fieldId);
+        $this->client->request(Request::METHOD_POST, '/s/mautomic-crm/settings/deal-fields/delete/'.$fieldId);
 
         $this->em->clear();
         $deleted = $this->em->getRepository(DealField::class)->find($fieldId);
