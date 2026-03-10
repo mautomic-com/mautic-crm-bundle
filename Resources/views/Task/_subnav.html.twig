@@ -1,0 +1,15 @@
+{# Sub-navigation for Tasks section #}
+{% set activeTab = activeTab|default('tasks') %}
+
+<ul class="nav nav-pills mb-md">
+    <li{% if activeTab == 'tasks' %} class="active"{% endif %}>
+        <a href="{{ path('mautic_mautomic_crm_task_index') }}" data-toggle="ajax">
+            {{ 'mautomic_crm.tasks'|trans }}
+        </a>
+    </li>
+    <li{% if activeTab == 'queues' %} class="active"{% endif %}>
+        <a href="{{ path('mautic_mautomic_crm_task_queue_index') }}" data-toggle="ajax">
+            {{ 'mautomic_crm.task_queues'|trans }}
+        </a>
+    </li>
+</ul>

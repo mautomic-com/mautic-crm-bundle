@@ -5,10 +5,12 @@
 
 {% block mauticContent %}mautomic_crm_task_queue{% endblock %}
 
-{% block headerTitle %}{{ 'mautomic_crm.task_queues'|trans }}{% endblock %}
+{% block headerTitle %}{{ 'mautomic_crm.tasks'|trans }}{% endblock %}
 
 {% block content %}
   {% if isIndex %}
+    {{ include('@MautomicCrm/Task/_subnav.html.twig', {'activeTab': 'queues'}) }}
+
     <div id="page-list-wrapper" class="{% if items|length > 0 or searchValue is not empty %}panel {% endif %}panel-default">
         {{ include('@MauticCore/Helper/list_toolbar.html.twig', {
             'searchValue': searchValue,

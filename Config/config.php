@@ -133,12 +133,6 @@ return [
                 'parent'   => 'mautomic_crm.crm',
                 'priority' => 30,
             ],
-            'mautomic_crm.task_queues' => [
-                'route'    => 'mautic_mautomic_crm_task_queue_index',
-                'access'   => 'mautomic_crm:tasks:view',
-                'parent'   => 'mautomic_crm.crm',
-                'priority' => 31,
-            ],
         ],
         'admin' => [
             'mautomic_crm.settings' => [
