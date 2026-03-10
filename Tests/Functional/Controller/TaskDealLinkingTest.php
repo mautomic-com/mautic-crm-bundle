@@ -103,6 +103,80 @@ class TaskDealLinkingTest extends MauticMysqlTestCase
         $this->assertGreaterThan(0, $crawler->filter('#task_contact')->count(), 'Contact dropdown should exist');
     }
 
+    public function testDealDetailShowsAddTaskButton(): void
+    {
+        $pipeline = $this->createPipelineWithStage();
+
+        $deal = new Deal();
+        $deal->setName('Add Task Button Deal');
+        $deal->setPipeline($pipeline);
+        $deal->setStage($pipeline->getStages()->first());
+        $deal->setIsPublished(true);
+        $this->em->persist($deal);
+        $this->em->flush();
+
+        $crawler  = $this->client->request(Request::METHOD_GET, '/s/mautomic/deals/view/'.$deal->getId());
+        $response = $this->client->getResponse();
+
+        $this->assertSame(Response::HTTP_OK, $response->getStatusCode());
+        $this->assertStringContainsString('Add Task', $response->getContent());
+
+        $addTaskLinks = $crawler->filter('a[href*="dealId='.$deal->getId().'"]');
+        $this->assertGreaterThan(0, $addTaskLinks->count(), 'Add Task button should link with dealId parameter');
+    }
+
+    public function testNewTaskFromDealPreSelectsDeal(): void
+    {
+        $pipeline = $this->createPipelineWithStage();
+
+        $deal = new Deal();
+        $deal->setName('Pre-select Deal');
+        $deal->setPipeline($pipeline);
+        $deal->setStage($pipeline->getStages()->first());
+        $deal->setIsPublished(true);
+        $this->em->persist($deal);
+        $this->em->flush();
+
+        $crawler = $this->client->request(Request::METHOD_GET, '/s/mautomic/tasks/new?dealId='.$deal->getId());
+
+        $this->assertSame(Response::HTTP_OK, $this->client->getResponse()->getStatusCode());
+
+        $dealSelect = $crawler->filter('#task_deal');
+        $this->assertGreaterThan(0, $dealSelect->count(), 'Deal dropdown should exist');
+
+        $selectedOption = $crawler->filter('#task_deal option[selected]');
+        if ($selectedOption->count() > 0) {
+            $this->assertSame((string) $deal->getId(), $selectedOption->attr('value'), 'Deal should be pre-selected');
+        }
+    }
+
+    public function testEditTaskFromDealShowsForm(): void
+    {
+        $pipeline = $this->createPipelineWithStage();
+
+        $deal = new Deal();
+        $deal->setName('Edit Task Deal');
+        $deal->setPipeline($pipeline);
+        $deal->setStage($pipeline->getStages()->first());
+        $deal->setIsPublished(true);
+        $this->em->persist($deal);
+
+        $task = new Task();
+        $task->setTitle('Task to edit from deal');
+        $task->setDeal($deal);
+        $task->setStatus('open');
+        $task->setPriority('normal');
+        $task->setIsPublished(true);
+        $this->em->persist($task);
+
+        $this->em->flush();
+
+        $this->client->request(Request::METHOD_GET, '/s/mautomic/tasks/edit/'.$task->getId().'?dealId='.$deal->getId());
+
+        $this->assertSame(Response::HTTP_OK, $this->client->getResponse()->getStatusCode());
+        $this->assertStringContainsString('Task to edit from deal', $this->client->getResponse()->getContent());
+    }
+
     private function createPipelineWithStage(): Pipeline
     {
         $pipeline = new Pipeline();

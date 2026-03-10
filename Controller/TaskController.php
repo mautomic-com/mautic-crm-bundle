@@ -5,6 +5,9 @@ declare(strict_types=1);
 namespace MauticPlugin\MautomicCrmBundle\Controller;
 
 use Mautic\CoreBundle\Controller\AbstractStandardFormController;
+use MauticPlugin\MautomicCrmBundle\Entity\Deal;
+use MauticPlugin\MautomicCrmBundle\Entity\Task;
+use MauticPlugin\MautomicCrmBundle\Model\TaskModel;
 use MauticPlugin\MautomicCrmBundle\Model\TaskQueueModel;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\RedirectResponse;
@@ -53,6 +56,12 @@ class TaskController extends AbstractStandardFormController
      */
     public function newAction(Request $request)
     {
+        $dealId = (int) $request->query->get('dealId', '0');
+
+        if ($dealId > 0) {
+            return $this->newWithDeal($request, $dealId);
+        }
+
         return parent::newStandard($request);
     }
 
@@ -61,6 +70,12 @@ class TaskController extends AbstractStandardFormController
      */
     public function editAction(Request $request, int|string $objectId, bool $ignorePost = false)
     {
+        $dealId = (int) $request->query->get('dealId', '0');
+
+        if ($dealId > 0) {
+            return $this->editWithDeal($request, (int) $objectId, $dealId, $ignorePost);
+        }
+
         return parent::editStandard($request, $objectId, $ignorePost);
     }
 
@@ -142,5 +157,121 @@ class TaskController extends AbstractStandardFormController
                 'flashes' => $flashes,
             ])
         );
+    }
+
+    /**
+     * @return JsonResponse|RedirectResponse|Response
+     */
+    private function newWithDeal(Request $request, int $dealId)
+    {
+        /** @var TaskModel $model */
+        $model  = $this->getModel('mautomic_crm.task');
+        $entity = $model->getEntity();
+        \assert($entity instanceof Task);
+
+        $deal = $this->getModel('mautomic_crm.deal')->getEntity($dealId);
+        if ($deal instanceof Deal) {
+            $entity->setDeal($deal);
+            if (null !== $deal->getContact()) {
+                $entity->setContact($deal->getContact());
+            }
+        }
+
+        $action = $this->generateUrl('mautic_mautomic_crm_task_action', [
+            'objectAction' => 'new',
+            'dealId'       => $dealId,
+        ]);
+        $form = $model->createForm($entity, $this->formFactory, $action);
+
+        if (Request::METHOD_POST === $request->getMethod()) {
+            if (!$cancelled = $this->isFormCancelled($form)) {
+                if ($this->isFormValid($form)) {
+                    $model->saveEntity($entity);
+
+                    return $this->redirectToDeal($entity, $dealId);
+                }
+            }
+
+            if ($cancelled) {
+                return $this->redirectToDeal($entity, $dealId);
+            }
+        }
+
+        return $this->delegateView([
+            'viewParameters' => [
+                'form'   => $form->createView(),
+                'entity' => $entity,
+            ],
+            'contentTemplate' => '@MautomicCrm/Task/form.html.twig',
+            'passthroughVars' => [
+                'mauticContent' => 'mautomic_crm_task',
+                'route'         => $action,
+            ],
+        ]);
+    }
+
+    /**
+     * @return JsonResponse|RedirectResponse|Response
+     */
+    private function editWithDeal(Request $request, int $objectId, int $dealId, bool $ignorePost = false)
+    {
+        /** @var TaskModel $model */
+        $model  = $this->getModel('mautomic_crm.task');
+        $entity = $model->getEntity($objectId);
+
+        if (null === $entity) {
+            return $this->redirectToDeal(null, $dealId);
+        }
+
+        $action = $this->generateUrl('mautic_mautomic_crm_task_action', [
+            'objectAction' => 'edit',
+            'objectId'     => $objectId,
+            'dealId'       => $dealId,
+        ]);
+        $form = $model->createForm($entity, $this->formFactory, $action);
+
+        if (Request::METHOD_POST === $request->getMethod() && !$ignorePost) {
+            if (!$cancelled = $this->isFormCancelled($form)) {
+                if ($this->isFormValid($form)) {
+                    $model->saveEntity($entity);
+
+                    return $this->redirectToDeal($entity, $dealId);
+                }
+            }
+
+            if ($cancelled) {
+                return $this->redirectToDeal($entity, $dealId);
+            }
+        }
+
+        return $this->delegateView([
+            'viewParameters' => [
+                'form'   => $form->createView(),
+                'entity' => $entity,
+            ],
+            'contentTemplate' => '@MautomicCrm/Task/form.html.twig',
+            'passthroughVars' => [
+                'mauticContent' => 'mautomic_crm_task',
+                'route'         => $action,
+            ],
+        ]);
+    }
+
+    private function redirectToDeal(?Task $entity, int $dealId): RedirectResponse
+    {
+        $resolvedDealId = $dealId;
+
+        if ($resolvedDealId < 1 && null !== $entity && null !== $entity->getDeal()) {
+            $resolvedDealId = (int) $entity->getDeal()->getId();
+        }
+
+        if ($resolvedDealId > 0) {
+            return $this->redirect($this->generateUrl('mautic_mautomic_crm_deal_action', [
+                'objectAction' => 'view',
+                'objectId'     => $resolvedDealId,
+            ]));
+        }
+
+        return $this->redirect($this->generateUrl('mautic_mautomic_crm_task_index'));
     }
 }
