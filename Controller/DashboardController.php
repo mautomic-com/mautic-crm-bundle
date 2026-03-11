@@ -12,6 +12,13 @@ use Symfony\Component\HttpFoundation\Response;
 
 class DashboardController extends CommonController
 {
+    public static function getSubscribedServices(): array
+    {
+        return array_merge(parent::getSubscribedServices(), [
+            ForecastModel::class => ForecastModel::class,
+        ]);
+    }
+
     public function indexAction(Request $request): Response
     {
         if (!$this->security->isGranted('mautomic_crm:deals:view')) {
@@ -19,7 +26,7 @@ class DashboardController extends CommonController
         }
 
         /** @var ForecastModel $forecastModel */
-        $forecastModel = $this->getModel('mautomic_crm.forecast');
+        $forecastModel = $this->container->get(ForecastModel::class);
 
         $pipelineId = $request->query->getInt('pipeline', 0) ?: null;
 
