@@ -12,20 +12,19 @@ use Symfony\Component\HttpFoundation\Response;
 
 class DashboardController extends CommonController
 {
-    public function __construct(
-        private ForecastModel $forecastModel,
-    ) {
-    }
-
     public function indexAction(Request $request): Response
     {
         if (!$this->security->isGranted('mautomic_crm:deals:view')) {
             return $this->accessDenied();
         }
 
+        /** @var ForecastModel $forecastModel */
+        $forecastModel = $this->container->get('mautic.mautomic_crm.model.forecast');
+
         $pipelineId = $request->query->getInt('pipeline', 0) ?: null;
 
-        $pipelines = $this->getEntityManager()->getRepository(Pipeline::class)
+        $pipelines = $this->container->get('doctrine.orm.entity_manager')
+            ->getRepository(Pipeline::class)
             ->createQueryBuilder('p')
             ->where('p.isPublished = :published')
             ->setParameter('published', true)
@@ -33,13 +32,13 @@ class DashboardController extends CommonController
             ->getQuery()
             ->getResult();
 
-        $kpis           = $this->forecastModel->getKpis($pipelineId);
-        $funnelData     = $this->forecastModel->getFunnelData($pipelineId);
-        $revenueData    = $this->forecastModel->getRevenueOverTime($pipelineId);
-        $dealsByStage   = $this->forecastModel->getDealsByStage($pipelineId);
-        $atRiskDeals    = $this->forecastModel->getAtRiskDeals($pipelineId);
-        $topDeals       = $this->forecastModel->getTopDeals($pipelineId);
-        $recentActivity = $this->forecastModel->getRecentActivity($pipelineId);
+        $kpis           = $forecastModel->getKpis($pipelineId);
+        $funnelData     = $forecastModel->getFunnelData($pipelineId);
+        $revenueData    = $forecastModel->getRevenueOverTime($pipelineId);
+        $dealsByStage   = $forecastModel->getDealsByStage($pipelineId);
+        $atRiskDeals    = $forecastModel->getAtRiskDeals($pipelineId);
+        $topDeals       = $forecastModel->getTopDeals($pipelineId);
+        $recentActivity = $forecastModel->getRecentActivity($pipelineId);
 
         return $this->delegateView([
             'viewParameters' => [
@@ -60,10 +59,5 @@ class DashboardController extends CommonController
                 'route'         => $this->generateUrl('mautic_mautomic_crm_dashboard_index'),
             ],
         ]);
-    }
-
-    private function getEntityManager(): \Doctrine\ORM\EntityManagerInterface
-    {
-        return $this->container->get('doctrine.orm.entity_manager');
     }
 }
