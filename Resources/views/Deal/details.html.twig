@@ -166,7 +166,12 @@
           {% endif %}
 
           <div class="pa-md">
-              <h4>{{ 'mautomic_crm.deal.tasks'|trans }}</h4>
+              <h4>
+                  {{ 'mautomic_crm.deal.tasks'|trans }}
+                  <a class="btn btn-primary btn-xs pull-right" href="{{ path('mautic_mautomic_crm_task_action', {'objectAction': 'new', 'dealId': item.id}) }}">
+                      <i class="ri-add-line"></i> {{ 'mautomic_crm.task.add'|trans }}
+                  </a>
+              </h4>
               {% if tasks is defined and tasks|length > 0 %}
                   <table class="table table-hover">
                       <thead>
