@@ -19,12 +19,11 @@ class DashboardController extends CommonController
         }
 
         /** @var ForecastModel $forecastModel */
-        $forecastModel = $this->container->get('mautic.mautomic_crm.model.forecast');
+        $forecastModel = $this->getModel('mautomic_crm.forecast');
 
         $pipelineId = $request->query->getInt('pipeline', 0) ?: null;
 
-        $pipelines = $this->container->get('doctrine.orm.entity_manager')
-            ->getRepository(Pipeline::class)
+        $pipelines = $this->getDoctrine()->getRepository(Pipeline::class)
             ->createQueryBuilder('p')
             ->where('p.isPublished = :published')
             ->setParameter('published', true)
