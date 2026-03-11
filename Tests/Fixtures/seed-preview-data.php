@@ -2,29 +2,15 @@
 
 declare(strict_types=1);
 
-/**
- * Seeds a fresh Mautic install with realistic CRM test data.
- *
- * Run via: ddev exec php plugins/MautomicCrmBundle/Tests/Fixtures/seed-preview-data.php
- *
- * Creates:
- * - 10 contacts
- * - 3 companies
- * - 2 pipelines with stages
- * - 12 deals across stages
- * - 8 tasks (some linked to deals, some overdue)
- * - 10 notes on deals
- */
-
 // Bootstrap Mautic kernel
 $loader = require __DIR__.'/../../../../autoload.php';
 
 // Mautic 7 boot
-$_SERVER['APP_ENV']          = 'prod';
-$_SERVER['APP_DEBUG']        = '0';
+$_SERVER['APP_ENV']             = 'prod';
+$_SERVER['APP_DEBUG']           = '0';
 $_SERVER['MAUTIC_TABLE_PREFIX'] = $_SERVER['MAUTIC_TABLE_PREFIX'] ?? '';
 
-$kernel = new \AppKernel('prod', false);
+$kernel = new AppKernel('prod', false);
 $kernel->boot();
 
 $container = $kernel->getContainer();
@@ -34,36 +20,36 @@ echo "Seeding preview data...\n";
 
 // ─── Helper ──────────────────────────────────────────────────────────
 
-$adminUser = $em->getRepository(\Mautic\UserBundle\Entity\User::class)->findOneBy(['username' => 'admin']);
+$adminUser = $em->getRepository(Mautic\UserBundle\Entity\User::class)->findOneBy(['username' => 'admin']);
 if (!$adminUser) {
     echo "ERROR: Admin user not found. Run mautic:install first.\n";
     exit(1);
 }
 
-$now = new \DateTime();
+$now = new DateTime();
 
-function randomDate(string $from, string $to): \DateTime
+function randomDate(string $from, string $to): DateTime
 {
     $start = strtotime($from);
     $end   = strtotime($to);
 
-    return (new \DateTime())->setTimestamp(mt_rand($start, $end));
+    return (new DateTime())->setTimestamp(mt_rand($start, $end));
 }
 
 // ─── Companies ───────────────────────────────────────────────────────
 
 echo "  Creating companies...\n";
 
-$companies = [];
+$companies   = [];
 $companyData = [
     ['companyname' => 'Acme Corp',      'companyemail' => 'info@acme.example.com',     'companycity' => 'Warsaw',   'companycountry' => 'Poland'],
     ['companyname' => 'TechStart GmbH', 'companyemail' => 'hello@techstart.example.de', 'companycity' => 'Berlin',   'companycountry' => 'Germany'],
-    ['companyname' => 'Nordic Solutions','companyemail' => 'contact@nordic.example.se', 'companycity' => 'Stockholm','companycountry' => 'Sweden'],
+    ['companyname' => 'Nordic Solutions', 'companyemail' => 'contact@nordic.example.se', 'companycity' => 'Stockholm', 'companycountry' => 'Sweden'],
 ];
 
 $companyModel = $container->get('mautic.lead.model.company');
 foreach ($companyData as $cd) {
-    $company = new \Mautic\LeadBundle\Entity\Company();
+    $company = new Mautic\LeadBundle\Entity\Company();
     foreach ($cd as $field => $value) {
         $company->addUpdatedField($field, $value);
     }
@@ -75,23 +61,23 @@ foreach ($companyData as $cd) {
 
 echo "  Creating contacts...\n";
 
-$contacts = [];
+$contacts    = [];
 $contactData = [
     ['firstname' => 'Jan',     'lastname' => 'Kowalski',   'email' => 'jan.kowalski@acme.example.com'],
     ['firstname' => 'Anna',    'lastname' => 'Nowak',      'email' => 'anna.nowak@acme.example.com'],
     ['firstname' => 'Piotr',   'lastname' => 'Wiśniewski', 'email' => 'piotr.w@techstart.example.de'],
     ['firstname' => 'Maria',   'lastname' => 'Zielińska',  'email' => 'maria.z@techstart.example.de'],
-    ['firstname' => 'Tomasz',  'lastname' => 'Lewandowski','email' => 'tomasz.l@nordic.example.se'],
-    ['firstname' => 'Katarzyna','lastname' => 'Kamińska', 'email' => 'katarzyna.k@nordic.example.se'],
+    ['firstname' => 'Tomasz',  'lastname' => 'Lewandowski', 'email' => 'tomasz.l@nordic.example.se'],
+    ['firstname' => 'Katarzyna', 'lastname' => 'Kamińska', 'email' => 'katarzyna.k@nordic.example.se'],
     ['firstname' => 'Michał',  'lastname' => 'Szymański',  'email' => 'michal.sz@acme.example.com'],
-    ['firstname' => 'Agnieszka','lastname' => 'Woźniak',  'email' => 'agnieszka.w@techstart.example.de'],
+    ['firstname' => 'Agnieszka', 'lastname' => 'Woźniak',  'email' => 'agnieszka.w@techstart.example.de'],
     ['firstname' => 'Robert',  'lastname' => 'Dąbrowski',  'email' => 'robert.d@nordic.example.se'],
     ['firstname' => 'Monika',  'lastname' => 'Kozłowska',  'email' => 'monika.k@acme.example.com'],
 ];
 
 $leadModel = $container->get('mautic.lead.model.lead');
 foreach ($contactData as $i => $cd) {
-    $lead = new \Mautic\LeadBundle\Entity\Lead();
+    $lead = new Mautic\LeadBundle\Entity\Lead();
     $lead->setOwner($adminUser);
     foreach ($cd as $field => $value) {
         $lead->addUpdatedField($field, $value);
@@ -111,7 +97,7 @@ echo "  Creating pipelines and stages...\n";
 $pipelineModel = $container->get('mautic.mautomic_crm.model.pipeline');
 
 // Pipeline 1: Enterprise Sales
-$p1 = new \MauticPlugin\MautomicCrmBundle\Entity\Pipeline();
+$p1 = new MauticPlugin\MautomicCrmBundle\Entity\Pipeline();
 $p1->setName('Enterprise Sales');
 $p1->setDescription('High-value B2B deals');
 $p1->setIsPublished(true);
@@ -122,12 +108,12 @@ $p1Stages = [
     ['name' => 'Discovery',      'order' => 2, 'probability' => 25, 'type' => 'open'],
     ['name' => 'Proposal',       'order' => 3, 'probability' => 50, 'type' => 'open'],
     ['name' => 'Negotiation',    'order' => 4, 'probability' => 75, 'type' => 'open'],
-    ['name' => 'Won',            'order' => 5, 'probability' => 100,'type' => 'won'],
+    ['name' => 'Won',            'order' => 5, 'probability' => 100, 'type' => 'won'],
     ['name' => 'Lost',           'order' => 6, 'probability' => 0,  'type' => 'lost'],
 ];
 
 foreach ($p1Stages as $sd) {
-    $stage = new \MauticPlugin\MautomicCrmBundle\Entity\Stage();
+    $stage = new MauticPlugin\MautomicCrmBundle\Entity\Stage();
     $stage->setName($sd['name']);
     $stage->setOrder($sd['order']);
     $stage->setProbability($sd['probability']);
@@ -139,7 +125,7 @@ foreach ($p1Stages as $sd) {
 $pipelineModel->saveEntity($p1);
 
 // Pipeline 2: SMB Quick Close
-$p2 = new \MauticPlugin\MautomicCrmBundle\Entity\Pipeline();
+$p2 = new MauticPlugin\MautomicCrmBundle\Entity\Pipeline();
 $p2->setName('SMB Quick Close');
 $p2->setDescription('Small and medium business — fast cycle');
 $p2->setIsPublished(true);
@@ -148,13 +134,13 @@ $p2->setIsDefault(false);
 $p2Stages = [
     ['name' => 'Lead In',      'order' => 1, 'probability' => 20, 'type' => 'open'],
     ['name' => 'Demo Booked',  'order' => 2, 'probability' => 50, 'type' => 'open'],
-    ['name' => 'Proposal Sent','order' => 3, 'probability' => 70, 'type' => 'open'],
-    ['name' => 'Closed Won',   'order' => 4, 'probability' => 100,'type' => 'won'],
+    ['name' => 'Proposal Sent', 'order' => 3, 'probability' => 70, 'type' => 'open'],
+    ['name' => 'Closed Won',   'order' => 4, 'probability' => 100, 'type' => 'won'],
     ['name' => 'Closed Lost',  'order' => 5, 'probability' => 0,  'type' => 'lost'],
 ];
 
 foreach ($p2Stages as $sd) {
-    $stage = new \MauticPlugin\MautomicCrmBundle\Entity\Stage();
+    $stage = new MauticPlugin\MautomicCrmBundle\Entity\Stage();
     $stage->setName($sd['name']);
     $stage->setOrder($sd['order']);
     $stage->setProbability($sd['probability']);
@@ -204,7 +190,7 @@ $deals = [];
 foreach ($dealData as $dd) {
     $stages = $dd['pipeline'] === $p1 ? $p1StageEntities : $p2StageEntities;
 
-    $deal = new \MauticPlugin\MautomicCrmBundle\Entity\Deal();
+    $deal = new MauticPlugin\MautomicCrmBundle\Entity\Deal();
     $deal->setName($dd['name']);
     $deal->setAmount($dd['amount']);
     $deal->setCurrency('PLN');
@@ -213,7 +199,7 @@ foreach ($dealData as $dd) {
     $deal->setContact($contacts[$dd['contactIdx']]);
     $deal->setCompany($companies[$dd['companyIdx']]);
     $deal->setOwner($adminUser);
-    $deal->setCloseDate(new \DateTime($dd['closeDate']));
+    $deal->setCloseDate(new DateTime($dd['closeDate']));
     $deal->setIsPublished(true);
     $dealModel->saveEntity($deal);
     $deals[] = $deal;
@@ -232,23 +218,23 @@ $taskData = [
     ['title' => 'Prepare renewal contract',         'deal' => 3, 'contact' => 1, 'status' => 'open',      'priority' => 'high',   'due' => '-3 days'],  // overdue
     ['title' => 'Qualify TechStart lead',           'deal' => 4, 'contact' => 3, 'status' => 'completed', 'priority' => 'normal', 'due' => '-7 days'],
     ['title' => 'Update pricing for Wiśniewski',    'deal' => 8, 'contact' => 2, 'status' => 'open',      'priority' => 'normal', 'due' => '+3 days'],
-    ['title' => 'Send welcome pack to Kozłowska',   'deal' => 10,'contact' => 9, 'status' => 'open',      'priority' => 'low',    'due' => '+10 days'],
-    ['title' => 'Quarterly pipeline review',        'deal' => null, 'contact' => null, 'status' => 'open','priority' => 'normal', 'due' => '+14 days'],
+    ['title' => 'Send welcome pack to Kozłowska',   'deal' => 10, 'contact' => 9, 'status' => 'open',      'priority' => 'low',    'due' => '+10 days'],
+    ['title' => 'Quarterly pipeline review',        'deal' => null, 'contact' => null, 'status' => 'open', 'priority' => 'normal', 'due' => '+14 days'],
 ];
 
 foreach ($taskData as $td) {
-    $task = new \MauticPlugin\MautomicCrmBundle\Entity\Task();
+    $task = new MauticPlugin\MautomicCrmBundle\Entity\Task();
     $task->setTitle($td['title']);
     $task->setStatus($td['status']);
     $task->setPriority($td['priority']);
-    $task->setDueDate(new \DateTime($td['due']));
+    $task->setDueDate(new DateTime($td['due']));
     $task->setOwner($adminUser);
     $task->setIsPublished(true);
 
-    if ($td['deal'] !== null) {
+    if (null !== $td['deal']) {
         $task->setDeal($deals[$td['deal']]);
     }
-    if ($td['contact'] !== null) {
+    if (null !== $td['contact']) {
         $task->setContact($contacts[$td['contact']]);
     }
 
@@ -270,12 +256,12 @@ $noteData = [
     ['text' => 'Demo scheduled for Friday. Prepare custom dashboard for their use case.',          'type' => 'general', 'deal' => 7, 'contact' => 0],
     ['text' => 'Sent proposal with three tiers. Waiting for feedback by end of week.',             'type' => 'email',   'deal' => 8, 'contact' => 2],
     ['text' => 'Quick intro call. They found us via a conference talk. Very interested.',           'type' => 'call',    'deal' => 9, 'contact' => 8],
-    ['text' => 'Closed! Signed annual contract. Onboarding starts next Monday.',                   'type' => 'general', 'deal' => 10,'contact' => 9],
+    ['text' => 'Closed! Signed annual contract. Onboarding starts next Monday.',                   'type' => 'general', 'deal' => 10, 'contact' => 9],
     ['text' => 'Lost — went with competitor on price. Keep relationship warm for next year.',       'type' => 'general', 'deal' => 5, 'contact' => 5],
 ];
 
 foreach ($noteData as $nd) {
-    $note = new \MauticPlugin\MautomicCrmBundle\Entity\Note();
+    $note = new MauticPlugin\MautomicCrmBundle\Entity\Note();
     $note->setText($nd['text']);
     $note->setType($nd['type']);
     $note->setDeal($deals[$nd['deal']]);
@@ -288,11 +274,11 @@ foreach ($noteData as $nd) {
 
 echo "\n";
 echo "Seed data created:\n";
-echo "  Companies:  " . count($companyData) . "\n";
-echo "  Contacts:   " . count($contactData) . "\n";
+echo '  Companies:  '.count($companyData)."\n";
+echo '  Contacts:   '.count($contactData)."\n";
 echo "  Pipelines:  2\n";
-echo "  Stages:     " . (count($p1Stages) + count($p2Stages)) . "\n";
-echo "  Deals:      " . count($dealData) . "\n";
-echo "  Tasks:      " . count($taskData) . "\n";
-echo "  Notes:      " . count($noteData) . "\n";
+echo '  Stages:     '.(count($p1Stages) + count($p2Stages))."\n";
+echo '  Deals:      '.count($dealData)."\n";
+echo '  Tasks:      '.count($taskData)."\n";
+echo '  Notes:      '.count($noteData)."\n";
 echo "\nDone!\n";
