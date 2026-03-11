@@ -1,8 +1,6 @@
 <?php
 
 declare(strict_types=1);
-
-// Bootstrap Mautic kernel
 $loader = require __DIR__.'/../../../../autoload.php';
 
 // Mautic 7 boot
