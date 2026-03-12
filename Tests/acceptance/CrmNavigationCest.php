@@ -65,6 +65,18 @@ class CrmNavigationCest
         $I->takeNamedScreenshot('nav_tasks');
     }
 
+    public function navigateToDashboard(AcceptanceTester $I): void
+    {
+        $I->wantTo('Navigate to CRM dashboard via URL');
+
+        $I->amOnPage('/s/mautomic/dashboard');
+        $I->waitForPageLoad();
+        $I->hideDebugToolbar();
+
+        $I->see('CRM Dashboard', 'h1.page-header-title');
+        $I->takeNamedScreenshot('nav_dashboard');
+    }
+
     public function navigateToDealFieldsViaAdmin(AcceptanceTester $I): void
     {
         $I->wantTo('Navigate to deal fields via admin URL');

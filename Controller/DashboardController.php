@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace MauticPlugin\MautomicCrmBundle\Controller;
 
+use Doctrine\ORM\EntityManagerInterface;
 use Mautic\CoreBundle\Controller\CommonController;
 use MauticPlugin\MautomicCrmBundle\Entity\Pipeline;
 use MauticPlugin\MautomicCrmBundle\Model\ForecastModel;
@@ -16,6 +17,7 @@ class DashboardController extends CommonController
     {
         return array_merge(parent::getSubscribedServices(), [
             ForecastModel::class => ForecastModel::class,
+            EntityManagerInterface::class => EntityManagerInterface::class,
         ]);
     }
 
@@ -28,9 +30,12 @@ class DashboardController extends CommonController
         /** @var ForecastModel $forecastModel */
         $forecastModel = $this->container->get(ForecastModel::class);
 
+        /** @var EntityManagerInterface $em */
+        $em = $this->container->get(EntityManagerInterface::class);
+
         $pipelineId = $request->query->getInt('pipeline', 0) ?: null;
 
-        $pipelines = $this->getDoctrine()->getRepository(Pipeline::class)
+        $pipelines = $em->getRepository(Pipeline::class)
             ->createQueryBuilder('p')
             ->where('p.isPublished = :published')
             ->setParameter('published', true)
