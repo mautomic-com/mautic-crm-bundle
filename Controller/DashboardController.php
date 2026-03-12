@@ -16,7 +16,7 @@ class DashboardController extends CommonController
     public static function getSubscribedServices(): array
     {
         return array_merge(parent::getSubscribedServices(), [
-            ForecastModel::class => ForecastModel::class,
+            ForecastModel::class          => ForecastModel::class,
             EntityManagerInterface::class => EntityManagerInterface::class,
         ]);
     }

@@ -6,7 +6,6 @@ namespace MauticPlugin\MautomicCrmBundle\Model;
 
 use Doctrine\ORM\EntityManagerInterface;
 use MauticPlugin\MautomicCrmBundle\Entity\Deal;
-use MauticPlugin\MautomicCrmBundle\Entity\DealRepository;
 
 class ForecastModel
 {
@@ -82,8 +81,8 @@ class ForecastModel
 
     public function getWinRate(?int $pipelineId = null): float
     {
-        $won  = $this->getWonThisMonth($pipelineId);
-        $lost = $this->getLostThisMonth($pipelineId);
+        $won   = $this->getWonThisMonth($pipelineId);
+        $lost  = $this->getLostThisMonth($pipelineId);
         $total = $won['count'] + $lost['count'];
 
         if (0 === $total) {
@@ -430,10 +429,10 @@ class ForecastModel
     public function getForecastData(?int $pipelineId = null): array
     {
         return [
-            'kpis'            => $this->getKpis($pipelineId),
-            'funnel'          => $this->getFunnelData($pipelineId),
+            'kpis'              => $this->getKpis($pipelineId),
+            'funnel'            => $this->getFunnelData($pipelineId),
             'revenue_over_time' => $this->getRevenueOverTime($pipelineId),
-            'deals_by_stage'  => $this->getDealsByStage($pipelineId),
+            'deals_by_stage'    => $this->getDealsByStage($pipelineId),
         ];
     }
 }

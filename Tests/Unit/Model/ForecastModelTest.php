@@ -104,6 +104,7 @@ class ForecastModelTest extends TestCase
                     // Won
                     return ['cnt' => '3', 'total' => '30000'];
                 }
+
                 // Lost
                 return ['cnt' => '2', 'total' => '20000'];
             });
@@ -204,7 +205,7 @@ class ForecastModelTest extends TestCase
 
     public function testGetRevenueOverTimeFillsData(): void
     {
-        $now      = new \DateTimeImmutable('first day of this month');
+        $now       = new \DateTimeImmutable('first day of this month');
         $thisMonth = $now->format('Y-m');
 
         $conn = $this->createMock(Connection::class);
