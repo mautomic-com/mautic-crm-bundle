@@ -2,14 +2,23 @@
 
 HubSpot-style CRM plugin for [Mautic](https://mautic.org/) 7 — deals, pipelines, tasks, and notes.
 
+## Screenshots
+
+![Sales Dashboard](docs/images/dashboard.png)
+*Sales Dashboard — KPI cards, pipeline funnel, revenue trends, at-risk deals, and recent activity*
+
+![Pipeline Board View](docs/images/pipeline.png)
+*Pipeline Board View — Kanban-style deal management with drag-and-drop stages*
+
 ## Features
 
-- **Pipelines & Stages**: Configurable sales pipelines with ordered stages, probabilities, and win/loss types
+- **Sales Dashboard**: KPI cards (open deals, weighted forecast, win rate, avg deal size, avg sales cycle), Chart.js charts (pipeline funnel, revenue over time, deals by stage), at-risk deals, top deals, and recent activity tables with pipeline filtering
+- **Pipelines & Stages**: Configurable sales pipelines with ordered stages, probabilities, and win/loss types — includes Kanban board view
 - **Deals**: Track revenue opportunities linked to contacts, companies, and pipeline stages
 - **Tasks**: Action items with due dates, priorities, and user assignment
 - **Notes**: Log calls, meetings, and general notes on deals and contacts
 - **Permissions**: Full role-based access control (view own, edit own, etc.)
-- **REST API**: Full CRUD API for deals, pipelines, and tasks
+- **REST API**: Full CRUD API for deals, pipelines, tasks, and forecast data
 
 ## Requirements
 

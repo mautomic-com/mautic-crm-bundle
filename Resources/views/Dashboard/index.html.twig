@@ -1,0 +1,333 @@
+{% extends '@MauticCore/Default/content.html.twig' %}
+
+{% block headerTitle %}{{ 'mautomic_crm.dashboard.title'|trans }}{% endblock %}
+
+{% block actions %}
+    <div class="btn-group ml-5">
+        <select id="pipeline-filter" class="form-control input-sm" onchange="window.location.href='{{ path('mautic_mautomic_crm_dashboard_index') }}' + (this.value ? '?pipeline=' + this.value : '')">
+            <option value="">{{ 'mautomic_crm.dashboard.all_pipelines'|trans }}</option>
+            {% for pipeline in pipelines %}
+                <option value="{{ pipeline.getId() }}" {% if pipelineId == pipeline.getId() %}selected{% endif %}>
+                    {{ pipeline.getName() }}
+                </option>
+            {% endfor %}
+        </select>
+    </div>
+{% endblock %}
+
+{% block content %}
+<div class="mautomic-dashboard">
+    {# KPI Cards #}
+    <div class="row mb-lg">
+        <div class="col-md-3 col-sm-6">
+            <div class="panel panel-default">
+                <div class="panel-body text-center">
+                    <h4 class="text-muted">{{ 'mautomic_crm.dashboard.open_deals'|trans }}</h4>
+                    <h2>{{ kpis.open_deals_count }}</h2>
+                    <p class="text-muted">{{ kpis.open_deals_value|number_format(2) }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-sm-6">
+            <div class="panel panel-default">
+                <div class="panel-body text-center">
+                    <h4 class="text-muted">{{ 'mautomic_crm.dashboard.weighted_pipeline'|trans }}</h4>
+                    <h2>{{ kpis.weighted_forecast|number_format(2) }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-sm-6">
+            <div class="panel panel-default">
+                <div class="panel-body text-center">
+                    <h4 class="text-muted">{{ 'mautomic_crm.dashboard.won_this_month'|trans }}</h4>
+                    <h2 class="text-success">{{ kpis.won_count }}</h2>
+                    <p class="text-muted">{{ kpis.won_value|number_format(2) }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-sm-6">
+            <div class="panel panel-default">
+                <div class="panel-body text-center">
+                    <h4 class="text-muted">{{ 'mautomic_crm.dashboard.lost_this_month'|trans }}</h4>
+                    <h2 class="text-danger">{{ kpis.lost_count }}</h2>
+                    <p class="text-muted">{{ kpis.lost_value|number_format(2) }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-lg">
+        <div class="col-md-4 col-sm-6">
+            <div class="panel panel-default">
+                <div class="panel-body text-center">
+                    <h4 class="text-muted">{{ 'mautomic_crm.dashboard.win_rate'|trans }}</h4>
+                    <h2>{{ kpis.win_rate }}%</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 col-sm-6">
+            <div class="panel panel-default">
+                <div class="panel-body text-center">
+                    <h4 class="text-muted">{{ 'mautomic_crm.dashboard.avg_deal_size'|trans }}</h4>
+                    <h2>{{ kpis.avg_deal_size|number_format(2) }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 col-sm-6">
+            <div class="panel panel-default">
+                <div class="panel-body text-center">
+                    <h4 class="text-muted">{{ 'mautomic_crm.dashboard.avg_sales_cycle'|trans }}</h4>
+                    <h2>{{ kpis.avg_sales_cycle }} {{ 'mautomic_crm.dashboard.days'|trans }}</h2>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {# Charts #}
+    <div class="row mb-lg">
+        <div class="col-md-4">
+            <div class="panel panel-default">
+                <div class="panel-heading">
+                    <h3 class="panel-title">{{ 'mautomic_crm.dashboard.pipeline_funnel'|trans }}</h3>
+                </div>
+                <div class="panel-body">
+                    <canvas id="funnelChart" height="300"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="panel panel-default">
+                <div class="panel-heading">
+                    <h3 class="panel-title">{{ 'mautomic_crm.dashboard.revenue_over_time'|trans }}</h3>
+                </div>
+                <div class="panel-body">
+                    <canvas id="revenueChart" height="300"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="panel panel-default">
+                <div class="panel-heading">
+                    <h3 class="panel-title">{{ 'mautomic_crm.dashboard.deals_by_stage'|trans }}</h3>
+                </div>
+                <div class="panel-body">
+                    <canvas id="dealsByStageChart" height="300"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {# Tables #}
+    <div class="row">
+        {# At-risk deals #}
+        <div class="col-md-6">
+            <div class="panel panel-default">
+                <div class="panel-heading">
+                    <h3 class="panel-title">{{ 'mautomic_crm.dashboard.at_risk_deals'|trans }}</h3>
+                </div>
+                <div class="panel-body">
+                    {% if atRiskDeals is empty %}
+                        <p class="text-muted text-center">{{ 'mautomic_crm.dashboard.no_at_risk'|trans }}</p>
+                    {% else %}
+                        <table class="table table-striped table-condensed">
+                            <thead>
+                                <tr>
+                                    <th>{{ 'mautomic_crm.deal.name'|trans }}</th>
+                                    <th>{{ 'mautomic_crm.deal.amount'|trans }}</th>
+                                    <th>{{ 'mautomic_crm.deal.close_date'|trans }}</th>
+                                    <th>{{ 'mautomic_crm.deal.stage'|trans }}</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for deal in atRiskDeals %}
+                                    <tr>
+                                        <td>
+                                            <a href="{{ path('mautic_mautomic_crm_deal_action', {objectAction: 'view', objectId: deal.getId()}) }}">
+                                                {{ deal.getName() }}
+                                            </a>
+                                        </td>
+                                        <td>{{ deal.getAmount() ? deal.getAmount()|number_format(2) : '-' }}</td>
+                                        <td class="text-danger">{{ deal.getCloseDate() ? deal.getCloseDate()|date('Y-m-d') : '-' }}</td>
+                                        <td>{{ deal.getStage() ? deal.getStage().getName() : '-' }}</td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        {# Top deals #}
+        <div class="col-md-6">
+            <div class="panel panel-default">
+                <div class="panel-heading">
+                    <h3 class="panel-title">{{ 'mautomic_crm.dashboard.top_deals'|trans }}</h3>
+                </div>
+                <div class="panel-body">
+                    {% if topDeals is empty %}
+                        <p class="text-muted text-center">{{ 'mautomic_crm.dashboard.no_top_deals'|trans }}</p>
+                    {% else %}
+                        <table class="table table-striped table-condensed">
+                            <thead>
+                                <tr>
+                                    <th>{{ 'mautomic_crm.deal.name'|trans }}</th>
+                                    <th>{{ 'mautomic_crm.deal.amount'|trans }}</th>
+                                    <th>{{ 'mautomic_crm.deal.stage'|trans }}</th>
+                                    <th>{{ 'mautomic_crm.deal.owner'|trans }}</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for deal in topDeals %}
+                                    <tr>
+                                        <td>
+                                            <a href="{{ path('mautic_mautomic_crm_deal_action', {objectAction: 'view', objectId: deal.getId()}) }}">
+                                                {{ deal.getName() }}
+                                            </a>
+                                        </td>
+                                        <td>{{ deal.getAmount() ? deal.getAmount()|number_format(2) : '-' }}</td>
+                                        <td>{{ deal.getStage() ? deal.getStage().getName() : '-' }}</td>
+                                        <td>{{ deal.getOwner() ? deal.getOwner().getName() : '-' }}</td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {# Recent activity #}
+    <div class="row">
+        <div class="col-md-12">
+            <div class="panel panel-default">
+                <div class="panel-heading">
+                    <h3 class="panel-title">{{ 'mautomic_crm.dashboard.recent_activity'|trans }}</h3>
+                </div>
+                <div class="panel-body">
+                    {% if recentActivity is empty %}
+                        <p class="text-muted text-center">{{ 'mautomic_crm.dashboard.no_activity'|trans }}</p>
+                    {% else %}
+                        <table class="table table-striped table-condensed">
+                            <thead>
+                                <tr>
+                                    <th>{{ 'mautomic_crm.deal.name'|trans }}</th>
+                                    <th>{{ 'mautomic_crm.dashboard.action'|trans }}</th>
+                                    <th>{{ 'mautomic_crm.deal.amount'|trans }}</th>
+                                    <th>{{ 'mautomic_crm.dashboard.date'|trans }}</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for activity in recentActivity %}
+                                    <tr>
+                                        <td>{{ activity.deal_name }}</td>
+                                        <td>
+                                            {% if activity.action == 'won' %}
+                                                <span class="label label-success">{{ 'mautomic_crm.dashboard.action_won'|trans }}</span>
+                                            {% elseif activity.action == 'lost' %}
+                                                <span class="label label-danger">{{ 'mautomic_crm.dashboard.action_lost'|trans }}</span>
+                                            {% else %}
+                                                <span class="label label-info">{{ 'mautomic_crm.dashboard.action_updated'|trans }}</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>{{ activity.amount ? activity.amount|number_format(2) : '-' }}</td>
+                                        <td>{{ activity.date }}</td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    var funnelData = {{ funnelData|json_encode|raw }};
+    var revenueData = {{ revenueData|json_encode|raw }};
+    var dealsByStageData = {{ dealsByStage|json_encode|raw }};
+
+    // Pipeline Funnel Chart
+    if (funnelData.length > 0) {
+        new Chart(document.getElementById('funnelChart').getContext('2d'), {
+            type: 'bar',
+            data: {
+                labels: funnelData.map(function(s) { return s.name; }),
+                datasets: [{
+                    label: '{{ 'mautomic_crm.dashboard.deal_count'|trans }}',
+                    data: funnelData.map(function(s) { return s.count; }),
+                    backgroundColor: 'rgba(54, 162, 235, 0.7)',
+                    borderColor: 'rgba(54, 162, 235, 1)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                indexAxis: 'y',
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: { x: { beginAtZero: true } }
+            }
+        });
+    }
+
+    // Revenue Over Time Chart
+    if (revenueData.length > 0) {
+        new Chart(document.getElementById('revenueChart').getContext('2d'), {
+            type: 'line',
+            data: {
+                labels: revenueData.map(function(r) { return r.month; }),
+                datasets: [{
+                    label: '{{ 'mautomic_crm.dashboard.revenue'|trans }}',
+                    data: revenueData.map(function(r) { return r.revenue; }),
+                    borderColor: 'rgba(75, 192, 192, 1)',
+                    backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                    fill: true,
+                    tension: 0.3
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: { y: { beginAtZero: true } }
+            }
+        });
+    }
+
+    // Deals by Stage Chart
+    if (dealsByStageData.length > 0) {
+        var stageColors = dealsByStageData.map(function(s) {
+            if (s.type === 'won') return 'rgba(40, 167, 69, 0.7)';
+            if (s.type === 'lost') return 'rgba(220, 53, 69, 0.7)';
+            return 'rgba(54, 162, 235, 0.7)';
+        });
+
+        new Chart(document.getElementById('dealsByStageChart').getContext('2d'), {
+            type: 'bar',
+            data: {
+                labels: dealsByStageData.map(function(s) { return s.name; }),
+                datasets: [
+                    {
+                        label: '{{ 'mautomic_crm.dashboard.deal_count'|trans }}',
+                        data: dealsByStageData.map(function(s) { return s.count; }),
+                        backgroundColor: stageColors,
+                        borderWidth: 1
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: { y: { beginAtZero: true } }
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

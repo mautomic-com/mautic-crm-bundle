@@ -10,6 +10,10 @@ return [
 
     'routes' => [
         'main' => [
+            'mautic_mautomic_crm_dashboard_index' => [
+                'path'       => '/mautomic/dashboard',
+                'controller' => 'MauticPlugin\MautomicCrmBundle\Controller\DashboardController::indexAction',
+            ],
             'mautic_mautomic_crm_pipeline_index' => [
                 'path'       => '/mautomic/pipelines/{page}',
                 'controller' => 'MauticPlugin\MautomicCrmBundle\Controller\PipelineController::indexAction',
@@ -68,6 +72,11 @@ return [
             ],
         ],
         'api' => [
+            'mautomic_api_forecast' => [
+                'path'       => '/mautomic/forecast',
+                'controller' => MauticPlugin\MautomicCrmBundle\Controller\Api\ForecastApiController::class.'::getAction',
+                'method'     => 'GET',
+            ],
             'mautomic_api_pipelines' => [
                 'standard_entity' => true,
                 'name'            => 'mautomic_pipelines',
@@ -114,6 +123,12 @@ return [
                 'iconClass' => 'ri-briefcase-line',
                 'access'    => ['mautomic_crm:deals:view', 'mautomic_crm:pipelines:view'],
                 'priority'  => 60,
+            ],
+            'mautomic_crm.dashboard' => [
+                'route'    => 'mautic_mautomic_crm_dashboard_index',
+                'access'   => 'mautomic_crm:deals:view',
+                'parent'   => 'mautomic_crm.crm',
+                'priority' => 5,
             ],
             'mautomic_crm.deals' => [
                 'route'    => 'mautic_mautomic_crm_deal_index',

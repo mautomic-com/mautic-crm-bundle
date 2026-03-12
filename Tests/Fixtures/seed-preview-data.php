@@ -170,11 +170,11 @@ $dealData = [
     // Enterprise pipeline deals
     ['name' => 'Acme Annual License',     'amount' => '45000.00', 'pipeline' => $p1, 'stageIdx' => 3, 'contactIdx' => 0, 'companyIdx' => 0, 'closeDate' => '+30 days'],
     ['name' => 'TechStart Platform Deal', 'amount' => '28000.00', 'pipeline' => $p1, 'stageIdx' => 2, 'contactIdx' => 2, 'companyIdx' => 1, 'closeDate' => '+45 days'],
-    ['name' => 'Nordic Expansion',        'amount' => '62000.00', 'pipeline' => $p1, 'stageIdx' => 1, 'contactIdx' => 4, 'companyIdx' => 2, 'closeDate' => '+60 days'],
+    ['name' => 'Nordic Expansion',        'amount' => '62000.00', 'pipeline' => $p1, 'stageIdx' => 1, 'contactIdx' => 4, 'companyIdx' => 2, 'closeDate' => '-10 days'],
     ['name' => 'Acme Renewal 2026',       'amount' => '38000.00', 'pipeline' => $p1, 'stageIdx' => 4, 'contactIdx' => 1, 'companyIdx' => 0, 'closeDate' => '-5 days'],
     ['name' => 'TechStart Add-On',        'amount' => '12000.00', 'pipeline' => $p1, 'stageIdx' => 0, 'contactIdx' => 3, 'companyIdx' => 1, 'closeDate' => '+90 days'],
     ['name' => 'Nordic Data Migration',   'amount' => '8500.00',  'pipeline' => $p1, 'stageIdx' => 5, 'contactIdx' => 5, 'companyIdx' => 2, 'closeDate' => '-15 days'],
-    ['name' => 'Acme Consulting Bundle',  'amount' => '15000.00', 'pipeline' => $p1, 'stageIdx' => 2, 'contactIdx' => 6, 'companyIdx' => 0, 'closeDate' => '+20 days'],
+    ['name' => 'Acme Consulting Bundle',  'amount' => '15000.00', 'pipeline' => $p1, 'stageIdx' => 2, 'contactIdx' => 6, 'companyIdx' => 0, 'closeDate' => '-2 days'],
 
     // SMB pipeline deals
     ['name' => 'Kowalski Starter Pack',   'amount' => '2500.00',  'pipeline' => $p2, 'stageIdx' => 1, 'contactIdx' => 0, 'companyIdx' => 0, 'closeDate' => '+14 days'],
@@ -185,6 +185,7 @@ $dealData = [
 ];
 
 $deals = [];
+$conn  = $em->getConnection();
 foreach ($dealData as $dd) {
     $stages = $dd['pipeline'] === $p1 ? $p1StageEntities : $p2StageEntities;
 
@@ -200,6 +201,14 @@ foreach ($dealData as $dd) {
     $deal->setCloseDate(new DateTime($dd['closeDate']));
     $deal->setIsPublished(true);
     $dealModel->saveEntity($deal);
+
+    // DealModel::saveEntity() resets stage to first-in-pipeline on new deals — fix via SQL
+    $targetStage = $stages[$dd['stageIdx']];
+    $conn->executeStatement(
+        'UPDATE mautomic_deals SET stage_id = :stageId WHERE id = :dealId',
+        ['stageId' => $targetStage->getId(), 'dealId' => $deal->getId()]
+    );
+
     $deals[] = $deal;
 }
 
