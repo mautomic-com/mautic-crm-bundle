@@ -22,11 +22,7 @@ final class MautomicCrmEvents
 
     public const DEAL_POST_DELETE = 'mautomic_crm.deal_post_delete';
 
-    public const DEAL_STAGE_CHANGED = 'mautomic_crm.deal_stage_changed';
-
-    public const ON_CAMPAIGN_TRIGGER_DECISION = 'mautomic_crm.on_campaign_trigger_decision';
-
-    public const ON_CAMPAIGN_BATCH_ACTION = 'mautomic_crm.on_campaign_batch_action';
+    public const ON_CAMPAIGN_CREATE_DEAL_ACTION = 'mautomic_crm.on_campaign_create_deal_action';
 
     public const TASK_PRE_SAVE = 'mautomic_crm.task_pre_save';
 

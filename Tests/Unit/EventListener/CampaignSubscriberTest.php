@@ -4,17 +4,18 @@ declare(strict_types=1);
 
 namespace MauticPlugin\MautomicCrmBundle\Tests\Unit\EventListener;
 
+use Doctrine\Common\Collections\ArrayCollection;
+use Mautic\CampaignBundle\Entity\Event;
+use Mautic\CampaignBundle\Entity\LeadEventLog;
 use Mautic\CampaignBundle\Event\CampaignBuilderEvent;
-use Mautic\CampaignBundle\Event\CampaignExecutionEvent;
-use Mautic\CampaignBundle\Executioner\RealTimeExecutioner;
+use Mautic\CampaignBundle\Event\PendingEvent;
 use Mautic\CoreBundle\Factory\ModelFactory;
 use Mautic\LeadBundle\Entity\Lead;
-use Mautic\LeadBundle\Tracker\ContactTracker;
 use MauticPlugin\MautomicCrmBundle\Entity\Deal;
-use MauticPlugin\MautomicCrmBundle\Entity\DealRepository;
 use MauticPlugin\MautomicCrmBundle\Entity\Pipeline;
+use MauticPlugin\MautomicCrmBundle\Entity\PipelineRepository;
+use MauticPlugin\MautomicCrmBundle\Entity\Stage;
 use MauticPlugin\MautomicCrmBundle\Entity\StageRepository;
-use MauticPlugin\MautomicCrmBundle\Event\DealEvent;
 use MauticPlugin\MautomicCrmBundle\EventListener\CampaignSubscriber;
 use MauticPlugin\MautomicCrmBundle\Model\DealModel;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -22,13 +23,9 @@ use PHPUnit\Framework\TestCase;
 
 class CampaignSubscriberTest extends TestCase
 {
-    private RealTimeExecutioner&MockObject $realTimeExecutioner;
-
-    private ContactTracker&MockObject $contactTracker;
-
     private DealModel&MockObject $dealModel;
 
-    private DealRepository&MockObject $dealRepository;
+    private PipelineRepository&MockObject $pipelineRepository;
 
     private StageRepository&MockObject $stageRepository;
 
@@ -36,161 +33,265 @@ class CampaignSubscriberTest extends TestCase
 
     protected function setUp(): void
     {
-        $this->realTimeExecutioner = $this->createMock(RealTimeExecutioner::class);
-        $this->contactTracker      = $this->createMock(ContactTracker::class);
-        $this->dealModel           = $this->createMock(DealModel::class);
-        $this->dealRepository      = $this->createMock(DealRepository::class);
-        $this->stageRepository     = $this->createMock(StageRepository::class);
+        $this->dealModel          = $this->createMock(DealModel::class);
+        $this->pipelineRepository = $this->createMock(PipelineRepository::class);
+        $this->stageRepository    = $this->createMock(StageRepository::class);
 
         /** @var ModelFactory<DealModel>&MockObject $modelFactory */
         $modelFactory = $this->createMock(ModelFactory::class);
         $modelFactory->method('getModel')->with('mautomic_crm.deal')->willReturn($this->dealModel);
 
         $this->subscriber = new CampaignSubscriber(
-            $this->realTimeExecutioner,
-            $this->contactTracker,
             $modelFactory,
-            $this->dealRepository,
+            $this->pipelineRepository,
             $this->stageRepository,
         );
     }
 
-    public function testOnCampaignBuildRegistersDecisionAndAction(): void
+    public function testOnCampaignBuildRegistersCreateDealAction(): void
     {
         $event = $this->createMock(CampaignBuilderEvent::class);
 
-        $event->expects($this->once())
-            ->method('addDecision')
-            ->with('deal.stage_changed', $this->isType('array'));
+        $event->expects($this->never())->method('addDecision');
 
         $event->expects($this->once())
             ->method('addAction')
-            ->with('deal.update_stage', $this->isType('array'));
+            ->with('deal.create', $this->isType('array'));
 
         $this->subscriber->onCampaignBuild($event);
     }
 
-    public function testOnDealStageChangedSkipsDealsWithoutContact(): void
+    public function testOnCampaignCreateDealIgnoresWrongContext(): void
     {
-        $deal = new Deal();
-        $deal->setName('No Contact Deal');
+        $pendingEvent = $this->createPendingEvent(
+            'wrong.context',
+            ['name' => 'Test', 'pipeline' => 1],
+        );
 
-        $event = new DealEvent($deal);
+        $this->dealModel->expects($this->never())->method('saveEntity');
 
-        $this->realTimeExecutioner->expects($this->never())->method('execute');
-        $this->contactTracker->expects($this->never())->method('setSystemContact');
-
-        $this->subscriber->onDealStageChanged($event);
+        $this->subscriber->onCampaignCreateDeal($pendingEvent);
     }
 
-    public function testOnDealStageChangedCallsRealTimeExecutioner(): void
+    public function testOnCampaignCreateDealFailsWhenPipelineNotFound(): void
     {
-        $contact = $this->createMock(Lead::class);
+        $this->pipelineRepository->method('find')->with(999)->willReturn(null);
 
-        $deal = new Deal();
-        $deal->setName('Test Deal');
-        $deal->setContact($contact);
+        $pendingEvent = $this->createPendingEvent(
+            'deal.create',
+            ['name' => 'Test', 'pipeline' => 999],
+        );
 
-        $event = new DealEvent($deal);
+        $pendingEvent->expects($this->once())
+            ->method('failAll')
+            ->with('Pipeline not found.');
 
-        $this->contactTracker->expects($this->exactly(2))
-            ->method('setSystemContact')
-            ->willReturnCallback(function (?Lead $lead) use ($contact): void {
-                static $callCount = 0;
-                ++$callCount;
-                if (1 === $callCount) {
-                    $this->assertSame($contact, $lead);
-                } else {
-                    $this->assertNull($lead);
-                }
+        $this->subscriber->onCampaignCreateDeal($pendingEvent);
+    }
+
+    public function testOnCampaignCreateDealFailsWhenNoStageAvailable(): void
+    {
+        $pipeline = new Pipeline();
+        $pipeline->setName('Empty Pipeline');
+
+        $this->pipelineRepository->method('find')->with(1)->willReturn($pipeline);
+        $this->stageRepository->method('find')->willReturn(null);
+
+        $pendingEvent = $this->createPendingEvent(
+            'deal.create',
+            ['name' => 'Test', 'pipeline' => 1, 'stage' => 999],
+        );
+
+        $pendingEvent->expects($this->once())
+            ->method('failAll')
+            ->with('No stage available for the selected pipeline.');
+
+        $this->subscriber->onCampaignCreateDeal($pendingEvent);
+    }
+
+    public function testOnCampaignCreateDealCreatesDealsForContacts(): void
+    {
+        $stage = $this->createMock(Stage::class);
+
+        $pipeline = $this->createMock(Pipeline::class);
+        $pipeline->method('getStages')->willReturn(new ArrayCollection([$stage]));
+
+        $this->pipelineRepository->method('find')->with(1)->willReturn($pipeline);
+
+        $contact1 = $this->createMock(Lead::class);
+        $contact1->method('getId')->willReturn(10);
+        $contact2 = $this->createMock(Lead::class);
+        $contact2->method('getId')->willReturn(20);
+
+        $log1 = $this->createMock(LeadEventLog::class);
+        $log2 = $this->createMock(LeadEventLog::class);
+
+        $savedDeals = [];
+        $this->dealModel->expects($this->exactly(2))
+            ->method('saveEntity')
+            ->willReturnCallback(function (Deal $deal) use (&$savedDeals): void {
+                $savedDeals[] = $deal;
             });
 
-        $this->realTimeExecutioner->expects($this->once())
-            ->method('execute')
-            ->with('deal.stage_changed', $event, 'mautomic_crm.deal', $this->anything());
-
-        $this->subscriber->onDealStageChanged($event);
-    }
-
-    public function testOnCampaignTriggerDecisionMatchesCriteria(): void
-    {
-        $pipeline = $this->createMock(Pipeline::class);
-        $pipeline->method('getId')->willReturn(1);
-
-        $deal = new Deal();
-        $deal->setName('Match Deal');
-        $deal->setPipeline($pipeline);
-
-        $dealEvent = new DealEvent($deal);
-        $dealEvent->setPreviousStageId(10);
-        $dealEvent->setNewStageId(20);
-
-        $campaignEvent = $this->createCampaignExecutionEvent(
-            'deal.stage_changed',
-            $dealEvent,
-            ['pipeline' => 1, 'from_stage' => 10, 'to_stage' => 20],
+        $pendingEvent = $this->createPendingEventWithContacts(
+            'deal.create',
+            [
+                'name'        => 'Campaign Deal',
+                'pipeline'    => 1,
+                'description' => 'Auto-created',
+                'amount'      => '500.00',
+                'currency'    => 'USD',
+            ],
+            [100 => $contact1, 200 => $contact2],
+            [100 => $log1, 200 => $log2],
         );
 
-        $campaignEvent->expects($this->once())
-            ->method('setResult')
-            ->with(true);
+        $pendingEvent->expects($this->exactly(2))->method('pass');
 
-        $this->subscriber->onCampaignTriggerDecision($campaignEvent);
+        $this->subscriber->onCampaignCreateDeal($pendingEvent);
+
+        $this->assertCount(2, $savedDeals);
+        $this->assertSame('Campaign Deal', $savedDeals[0]->getName());
+        $this->assertSame('Auto-created', $savedDeals[0]->getDescription());
+        $this->assertSame('500.00', $savedDeals[0]->getAmount());
+        $this->assertSame('USD', $savedDeals[0]->getCurrency());
+        $this->assertSame($contact1, $savedDeals[0]->getContact());
+        $this->assertSame($pipeline, $savedDeals[0]->getPipeline());
     }
 
-    public function testOnCampaignTriggerDecisionReturnsFalseOnMismatch(): void
+    public function testOnCampaignCreateDealUsesFirstStageWhenNoneSpecified(): void
     {
+        $stage1 = $this->createMock(Stage::class);
+        $stage2 = $this->createMock(Stage::class);
+
         $pipeline = $this->createMock(Pipeline::class);
-        $pipeline->method('getId')->willReturn(1);
+        $pipeline->method('getStages')->willReturn(new ArrayCollection([$stage1, $stage2]));
 
-        $deal = new Deal();
-        $deal->setName('Mismatch Deal');
-        $deal->setPipeline($pipeline);
+        $this->pipelineRepository->method('find')->with(1)->willReturn($pipeline);
+        $this->stageRepository->expects($this->never())->method('find');
 
-        $dealEvent = new DealEvent($deal);
-        $dealEvent->setPreviousStageId(10);
-        $dealEvent->setNewStageId(20);
+        $contact = $this->createMock(Lead::class);
+        $log     = $this->createMock(LeadEventLog::class);
 
-        $campaignEvent = $this->createCampaignExecutionEvent(
-            'deal.stage_changed',
-            $dealEvent,
-            ['pipeline' => 999, 'from_stage' => null, 'to_stage' => null],
+        $savedDeal = null;
+        $this->dealModel->expects($this->once())
+            ->method('saveEntity')
+            ->willReturnCallback(function (Deal $deal) use (&$savedDeal): void {
+                $savedDeal = $deal;
+            });
+
+        $pendingEvent = $this->createPendingEventWithContacts(
+            'deal.create',
+            ['name' => 'Test', 'pipeline' => 1],
+            [100    => $contact],
+            [100    => $log],
         );
 
-        $campaignEvent->expects($this->once())
-            ->method('setResult')
-            ->with(false);
+        $pendingEvent->expects($this->once())->method('pass');
 
-        $this->subscriber->onCampaignTriggerDecision($campaignEvent);
+        $this->subscriber->onCampaignCreateDeal($pendingEvent);
+
+        $this->assertSame($stage1, $savedDeal->getStage());
     }
 
-    public function testOnCampaignTriggerDecisionIgnoresWrongContext(): void
+    public function testOnCampaignCreateDealUsesExplicitStage(): void
     {
-        /** @phpstan-ignore classConstant.deprecatedClass */
-        $campaignEvent = $this->createMock(CampaignExecutionEvent::class);
-        $campaignEvent->method('checkContext')->with('deal.stage_changed')->willReturn(false);
+        $stage = $this->createMock(Stage::class);
 
-        $campaignEvent->expects($this->never())->method('setResult');
+        $pipeline = $this->createMock(Pipeline::class);
 
-        $this->subscriber->onCampaignTriggerDecision($campaignEvent);
+        $this->pipelineRepository->method('find')->with(1)->willReturn($pipeline);
+        $this->stageRepository->method('find')->with(5)->willReturn($stage);
+
+        $contact = $this->createMock(Lead::class);
+        $log     = $this->createMock(LeadEventLog::class);
+
+        $savedDeal = null;
+        $this->dealModel->expects($this->once())
+            ->method('saveEntity')
+            ->willReturnCallback(function (Deal $deal) use (&$savedDeal): void {
+                $savedDeal = $deal;
+            });
+
+        $pendingEvent = $this->createPendingEventWithContacts(
+            'deal.create',
+            ['name' => 'Test', 'pipeline' => 1, 'stage' => 5],
+            [100    => $contact],
+            [100    => $log],
+        );
+
+        $pendingEvent->expects($this->once())->method('pass');
+
+        $this->subscriber->onCampaignCreateDeal($pendingEvent);
+
+        $this->assertSame($stage, $savedDeal->getStage());
+    }
+
+    public function testOnCampaignCreateDealDefaultsNameWhenEmpty(): void
+    {
+        $stage = $this->createMock(Stage::class);
+
+        $pipeline = $this->createMock(Pipeline::class);
+        $pipeline->method('getStages')->willReturn(new ArrayCollection([$stage]));
+
+        $this->pipelineRepository->method('find')->with(1)->willReturn($pipeline);
+
+        $contact = $this->createMock(Lead::class);
+        $log     = $this->createMock(LeadEventLog::class);
+
+        $savedDeal = null;
+        $this->dealModel->expects($this->once())
+            ->method('saveEntity')
+            ->willReturnCallback(function (Deal $deal) use (&$savedDeal): void {
+                $savedDeal = $deal;
+            });
+
+        $pendingEvent = $this->createPendingEventWithContacts(
+            'deal.create',
+            ['name' => '', 'pipeline' => 1],
+            [100    => $contact],
+            [100    => $log],
+        );
+
+        $pendingEvent->expects($this->once())->method('pass');
+
+        $this->subscriber->onCampaignCreateDeal($pendingEvent);
+
+        $this->assertSame('Campaign Deal', $savedDeal->getName());
     }
 
     /**
      * @param array<string, mixed> $config
-     *
-     * @phpstan-ignore return.deprecatedClass, classConstant.deprecatedClass
      */
-    private function createCampaignExecutionEvent(
-        string $context,
-        DealEvent $dealEvent,
-        array $config,
-    ): CampaignExecutionEvent&MockObject {
-        /** @phpstan-ignore classConstant.deprecatedClass */
-        $event = $this->createMock(CampaignExecutionEvent::class);
-        $event->method('checkContext')->with($context)->willReturn(true);
-        $event->method('getEventDetails')->willReturn($dealEvent);
-        $event->method('getConfig')->willReturn($config);
+    private function createPendingEvent(string $context, array $config): PendingEvent&MockObject
+    {
+        $campaignEvent = $this->createMock(Event::class);
+        $campaignEvent->method('getProperties')->willReturn($config);
 
-        return $event;
+        $pendingEvent = $this->createMock(PendingEvent::class);
+        $pendingEvent->method('checkContext')->willReturnCallback(
+            fn (string $ctx): bool => $ctx === $context,
+        );
+        $pendingEvent->method('getEvent')->willReturn($campaignEvent);
+
+        return $pendingEvent;
+    }
+
+    /**
+     * @param array<string, mixed>     $config
+     * @param array<int, Lead>         $contacts
+     * @param array<int, LeadEventLog> $logs
+     */
+    private function createPendingEventWithContacts(
+        string $context,
+        array $config,
+        array $contacts,
+        array $logs,
+    ): PendingEvent&MockObject {
+        $pendingEvent = $this->createPendingEvent($context, $config);
+        $pendingEvent->method('getContacts')->willReturn(new ArrayCollection($contacts));
+        $pendingEvent->method('getPending')->willReturn(new ArrayCollection($logs));
+
+        return $pendingEvent;
     }
 }
