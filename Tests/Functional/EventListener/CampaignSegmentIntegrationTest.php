@@ -13,23 +13,10 @@ use Mautic\LeadBundle\LeadEvents;
 use MauticPlugin\MautomicCrmBundle\Entity\Deal;
 use MauticPlugin\MautomicCrmBundle\Entity\Pipeline;
 use MauticPlugin\MautomicCrmBundle\Entity\Stage;
-use Symfony\Component\HttpFoundation\Request;
 
 class CampaignSegmentIntegrationTest extends MauticMysqlTestCase
 {
-    public function testDealStageChangedDecisionAvailableInCampaignBuilder(): void
-    {
-        $dispatcher = static::getContainer()->get('event_dispatcher');
-        $translator = static::getContainer()->get('translator');
-
-        $event = new CampaignBuilderEvent($translator);
-        $dispatcher->dispatch($event, CampaignEvents::CAMPAIGN_ON_BUILD);
-
-        $decisions = $event->getDecisions();
-        $this->assertArrayHasKey('deal.stage_changed', $decisions);
-    }
-
-    public function testUpdateDealStageActionAvailableInCampaignBuilder(): void
+    public function testCreateDealActionAvailableInCampaignBuilder(): void
     {
         $dispatcher = static::getContainer()->get('event_dispatcher');
         $translator = static::getContainer()->get('translator');
@@ -38,7 +25,20 @@ class CampaignSegmentIntegrationTest extends MauticMysqlTestCase
         $dispatcher->dispatch($event, CampaignEvents::CAMPAIGN_ON_BUILD);
 
         $actions = $event->getActions();
-        $this->assertArrayHasKey('deal.update_stage', $actions);
+        $this->assertArrayHasKey('deal.create', $actions);
+        $this->assertArrayNotHasKey('deal.update_stage', $actions);
+    }
+
+    public function testOldDecisionIsNoLongerRegistered(): void
+    {
+        $dispatcher = static::getContainer()->get('event_dispatcher');
+        $translator = static::getContainer()->get('translator');
+
+        $event = new CampaignBuilderEvent($translator);
+        $dispatcher->dispatch($event, CampaignEvents::CAMPAIGN_ON_BUILD);
+
+        $decisions = $event->getDecisions();
+        $this->assertArrayNotHasKey('deal.stage_changed', $decisions);
     }
 
     public function testDealSegmentFiltersAvailable(): void
@@ -62,7 +62,7 @@ class CampaignSegmentIntegrationTest extends MauticMysqlTestCase
         $this->assertSame('amount', $translations['deal_amount']['field']);
     }
 
-    public function testStageChangeTriggersCampaignDecision(): void
+    public function testStageChangeEndpointStillWorks(): void
     {
         $pipeline = $this->createPipelineWithStages();
         $stages   = $pipeline->getStages()->toArray();
@@ -72,7 +72,7 @@ class CampaignSegmentIntegrationTest extends MauticMysqlTestCase
         $this->em->clear();
 
         $newStageId = $stages[1]->getId();
-        $this->client->request(Request::METHOD_POST, '/s/mautomic/deals/'.$deal->getId().'/stage', [
+        $this->client->request('POST', '/s/mautomic/deals/'.$deal->getId().'/stage', [
             'stageId' => $newStageId,
         ]);
 

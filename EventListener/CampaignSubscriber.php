@@ -6,17 +6,15 @@ namespace MauticPlugin\MautomicCrmBundle\EventListener;
 
 use Mautic\CampaignBundle\CampaignEvents;
 use Mautic\CampaignBundle\Event\CampaignBuilderEvent;
-use Mautic\CampaignBundle\Event\CampaignExecutionEvent;
 use Mautic\CampaignBundle\Event\PendingEvent;
-use Mautic\CampaignBundle\Executioner\RealTimeExecutioner;
 use Mautic\CoreBundle\Factory\ModelFactory;
-use Mautic\LeadBundle\Tracker\ContactTracker;
-use MauticPlugin\MautomicCrmBundle\Entity\DealRepository;
+use Mautic\LeadBundle\Entity\Lead;
+use MauticPlugin\MautomicCrmBundle\Entity\Deal;
+use MauticPlugin\MautomicCrmBundle\Entity\Pipeline;
+use MauticPlugin\MautomicCrmBundle\Entity\PipelineRepository;
 use MauticPlugin\MautomicCrmBundle\Entity\Stage;
 use MauticPlugin\MautomicCrmBundle\Entity\StageRepository;
-use MauticPlugin\MautomicCrmBundle\Event\DealEvent;
-use MauticPlugin\MautomicCrmBundle\Form\Type\DealStageChangedDecisionType;
-use MauticPlugin\MautomicCrmBundle\Form\Type\UpdateDealStageActionType;
+use MauticPlugin\MautomicCrmBundle\Form\Type\CreateDealActionType;
 use MauticPlugin\MautomicCrmBundle\MautomicCrmEvents;
 use MauticPlugin\MautomicCrmBundle\Model\DealModel;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
@@ -29,10 +27,8 @@ class CampaignSubscriber implements EventSubscriberInterface
      * @param ModelFactory<DealModel> $modelFactory
      */
     public function __construct(
-        private RealTimeExecutioner $realTimeExecutioner,
-        private ContactTracker $contactTracker,
         ModelFactory $modelFactory,
-        private DealRepository $dealRepository,
+        private PipelineRepository $pipelineRepository,
         private StageRepository $stageRepository,
     ) {
         $model = $modelFactory->getModel('mautomic_crm.deal');
@@ -41,147 +37,144 @@ class CampaignSubscriber implements EventSubscriberInterface
     }
 
     /**
-     * @return array<string, array<int, int|string>|array<int, array<int, int|string>>>
+     * @return array<string, array<int, int|string>>
      */
     public static function getSubscribedEvents(): array
     {
         return [
-            CampaignEvents::CAMPAIGN_ON_BUILD                => ['onCampaignBuild', 0],
-            MautomicCrmEvents::DEAL_STAGE_CHANGED            => ['onDealStageChanged', 0],
-            MautomicCrmEvents::ON_CAMPAIGN_TRIGGER_DECISION  => ['onCampaignTriggerDecision', 0],
-            MautomicCrmEvents::ON_CAMPAIGN_BATCH_ACTION      => ['onCampaignTriggerAction', 0],
+            CampaignEvents::CAMPAIGN_ON_BUILD                   => ['onCampaignBuild', 0],
+            MautomicCrmEvents::ON_CAMPAIGN_CREATE_DEAL_ACTION   => ['onCampaignCreateDeal', 0],
         ];
     }
 
     public function onCampaignBuild(CampaignBuilderEvent $event): void
     {
-        $event->addDecision(
-            'deal.stage_changed',
-            [
-                'label'       => 'mautomic_crm.campaign.event.deal_stage_changed',
-                'description' => 'mautomic_crm.campaign.event.deal_stage_changed_descr',
-                'eventName'   => MautomicCrmEvents::ON_CAMPAIGN_TRIGGER_DECISION,
-                'formType'    => DealStageChangedDecisionType::class,
-            ]
-        );
-
         $event->addAction(
-            'deal.update_stage',
+            'deal.create',
             [
-                'label'          => 'mautomic_crm.campaign.event.update_deal_stage',
-                'description'    => 'mautomic_crm.campaign.event.update_deal_stage_descr',
-                'batchEventName' => MautomicCrmEvents::ON_CAMPAIGN_BATCH_ACTION,
-                'formType'       => UpdateDealStageActionType::class,
+                'label'          => 'mautomic_crm.campaign.event.create_deal',
+                'description'    => 'mautomic_crm.campaign.event.create_deal_descr',
+                'batchEventName' => MautomicCrmEvents::ON_CAMPAIGN_CREATE_DEAL_ACTION,
+                'formType'       => CreateDealActionType::class,
             ]
         );
     }
 
-    public function onDealStageChanged(DealEvent $event): void
+    public function onCampaignCreateDeal(PendingEvent $event): void
     {
-        $deal    = $event->getDeal();
-        $contact = $deal->getContact();
-
-        if (null === $contact) {
+        if (!$event->checkContext('deal.create')) {
             return;
         }
 
-        $this->contactTracker->setSystemContact($contact);
+        $config = $event->getEvent()->getProperties();
 
-        try {
-            $this->realTimeExecutioner->execute(
-                'deal.stage_changed',
-                $event,
-                'mautomic_crm.deal',
-                $deal->getId()
-            );
-        } finally {
-            $this->contactTracker->setSystemContact(null);
-        }
-    }
+        $pipeline = $this->resolvePipeline($config);
 
-    /** @phpstan-ignore parameter.deprecatedClass */
-    public function onCampaignTriggerDecision(CampaignExecutionEvent $event): void
-    {
-        if (!$event->checkContext('deal.stage_changed')) {
-            return;
-        }
-
-        $eventDetails = $event->getEventDetails();
-
-        if (!$eventDetails instanceof DealEvent) {
-            $event->setResult(false);
+        if (!$pipeline instanceof Pipeline) {
+            $event->failAll('Pipeline not found.');
 
             return;
         }
 
-        $config = $event->getConfig();
-        $deal   = $eventDetails->getDeal();
-
-        $pipelineId = !empty($config['pipeline']) ? (int) $config['pipeline'] : null;
-        $fromStage  = !empty($config['from_stage']) ? (int) $config['from_stage'] : null;
-        $toStage    = !empty($config['to_stage']) ? (int) $config['to_stage'] : null;
-
-        if (null !== $pipelineId && (null === $deal->getPipeline() || $deal->getPipeline()->getId() !== $pipelineId)) {
-            $event->setResult(false);
-
-            return;
-        }
-
-        if (null !== $fromStage && $eventDetails->getPreviousStageId() !== $fromStage) {
-            $event->setResult(false);
-
-            return;
-        }
-
-        if (null !== $toStage && $eventDetails->getNewStageId() !== $toStage) {
-            $event->setResult(false);
-
-            return;
-        }
-
-        $event->setResult(true);
-    }
-
-    public function onCampaignTriggerAction(PendingEvent $event): void
-    {
-        if (!$event->checkContext('deal.update_stage')) {
-            return;
-        }
-
-        $config     = $event->getEvent()->getProperties();
-        $pipelineId = !empty($config['pipeline']) ? (int) $config['pipeline'] : null;
-        $stageId    = !empty($config['stage']) ? (int) $config['stage'] : null;
-
-        if (null === $pipelineId || null === $stageId) {
-            $event->failAll('Pipeline and stage are required.');
-
-            return;
-        }
-
-        $stage = $this->stageRepository->find($stageId);
+        $stage = $this->resolveStage($config, $pipeline);
 
         if (!$stage instanceof Stage) {
-            $event->failAll('Target stage not found.');
+            $event->failAll('No stage available for the selected pipeline.');
 
             return;
         }
+
+        $nameTemplate = !empty($config['name']) ? (string) $config['name'] : 'Campaign Deal';
+        $description  = !empty($config['description']) ? (string) $config['description'] : null;
+        $amount       = !empty($config['amount']) ? (string) $config['amount'] : null;
+        $currency     = !empty($config['currency']) ? (string) $config['currency'] : null;
 
         $contacts = $event->getContacts();
         $pending  = $event->getPending();
 
         foreach ($contacts as $logId => $contact) {
-            $deals = $this->dealRepository->getDealsForContact((int) $contact->getId(), $pipelineId);
+            $deal = new Deal();
+            $deal->setName($this->replaceContactTokens($nameTemplate, $contact));
+            $deal->setPipeline($pipeline);
+            $deal->setStage($stage);
+            $deal->setContact($contact);
+            $deal->setIsPublished(true);
 
-            if (empty($deals)) {
-                $event->fail($pending->get($logId), 'No deal found in the specified pipeline.');
-                continue;
+            if (null !== $description) {
+                $deal->setDescription($description);
             }
 
-            $deal = $deals[0];
-            $deal->setStage($stage);
+            if (null !== $amount) {
+                $deal->setAmount($amount);
+            }
+
+            if (null !== $currency) {
+                $deal->setCurrency($currency);
+            }
+
             $this->dealModel->saveEntity($deal);
 
             $event->pass($pending->get($logId));
         }
+    }
+
+    /**
+     * @param array<string, mixed> $config
+     */
+    private function resolvePipeline(array $config): ?Pipeline
+    {
+        $pipelineId = !empty($config['pipeline']) ? (int) $config['pipeline'] : null;
+
+        if (null === $pipelineId) {
+            return null;
+        }
+
+        $pipeline = $this->pipelineRepository->find($pipelineId);
+
+        return $pipeline instanceof Pipeline ? $pipeline : null;
+    }
+
+    /**
+     * @param array<string, mixed> $config
+     */
+    private function resolveStage(array $config, Pipeline $pipeline): ?Stage
+    {
+        $stageId = !empty($config['stage']) ? (int) $config['stage'] : null;
+
+        if (null !== $stageId) {
+            $stage = $this->stageRepository->find($stageId);
+
+            if ($stage instanceof Stage) {
+                return $stage;
+            }
+        }
+
+        $firstStage = $pipeline->getStages()->first();
+
+        return $firstStage instanceof Stage ? $firstStage : null;
+    }
+
+    private function replaceContactTokens(string $template, Lead $contact): string
+    {
+        return (string) preg_replace_callback(
+            '/\{contactfield=(\w+)\}/',
+            static function (array $matches) use ($contact): string {
+                $field = $matches[1];
+
+                $value = match ($field) {
+                    'firstname'  => $contact->getFirstname(),
+                    'lastname'   => $contact->getLastname(),
+                    'email'      => $contact->getEmail(),
+                    'company'    => $contact->getCompany(),
+                    'city'       => $contact->getCity(),
+                    'country'    => $contact->getCountry(),
+                    'phone'      => $contact->getPhone(),
+                    default      => $contact->getFieldValue($field),
+                };
+
+                return (string) ($value ?? '');
+            },
+            $template,
+        );
     }
 }
