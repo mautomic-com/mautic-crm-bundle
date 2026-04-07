@@ -260,6 +260,76 @@ class CampaignSubscriberTest extends TestCase
         $this->assertSame('Campaign Deal', $savedDeal->getName());
     }
 
+    public function testOnCampaignCreateDealReplacesContactTokensInName(): void
+    {
+        $stage = $this->createMock(Stage::class);
+
+        $pipeline = $this->createMock(Pipeline::class);
+        $pipeline->method('getStages')->willReturn(new ArrayCollection([$stage]));
+
+        $this->pipelineRepository->method('find')->with(1)->willReturn($pipeline);
+
+        $contact = $this->createMock(Lead::class);
+        $contact->method('getFirstname')->willReturn('John');
+        $contact->method('getLastname')->willReturn('Doe');
+        $contact->method('getEmail')->willReturn('john@example.com');
+        $log = $this->createMock(LeadEventLog::class);
+
+        $savedDeal = null;
+        $this->dealModel->expects($this->once())
+            ->method('saveEntity')
+            ->willReturnCallback(function (Deal $deal) use (&$savedDeal): void {
+                $savedDeal = $deal;
+            });
+
+        $pendingEvent = $this->createPendingEventWithContacts(
+            'deal.create',
+            ['name' => 'Deal - {contactfield=firstname} {contactfield=lastname}', 'pipeline' => 1],
+            [100    => $contact],
+            [100    => $log],
+        );
+
+        $pendingEvent->expects($this->once())->method('pass');
+
+        $this->subscriber->onCampaignCreateDeal($pendingEvent);
+
+        $this->assertSame('Deal - John Doe', $savedDeal->getName());
+    }
+
+    public function testTokenReplacementHandlesUnknownFieldGracefully(): void
+    {
+        $stage = $this->createMock(Stage::class);
+
+        $pipeline = $this->createMock(Pipeline::class);
+        $pipeline->method('getStages')->willReturn(new ArrayCollection([$stage]));
+
+        $this->pipelineRepository->method('find')->with(1)->willReturn($pipeline);
+
+        $contact = $this->createMock(Lead::class);
+        $contact->method('getFieldValue')->with('custom_field')->willReturn(null);
+        $log = $this->createMock(LeadEventLog::class);
+
+        $savedDeal = null;
+        $this->dealModel->expects($this->once())
+            ->method('saveEntity')
+            ->willReturnCallback(function (Deal $deal) use (&$savedDeal): void {
+                $savedDeal = $deal;
+            });
+
+        $pendingEvent = $this->createPendingEventWithContacts(
+            'deal.create',
+            ['name' => 'Deal for {contactfield=custom_field}', 'pipeline' => 1],
+            [100    => $contact],
+            [100    => $log],
+        );
+
+        $pendingEvent->expects($this->once())->method('pass');
+
+        $this->subscriber->onCampaignCreateDeal($pendingEvent);
+
+        $this->assertSame('Deal for ', $savedDeal->getName());
+    }
+
     /**
      * @param array<string, mixed> $config
      */

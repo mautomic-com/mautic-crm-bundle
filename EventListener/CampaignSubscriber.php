@@ -8,6 +8,7 @@ use Mautic\CampaignBundle\CampaignEvents;
 use Mautic\CampaignBundle\Event\CampaignBuilderEvent;
 use Mautic\CampaignBundle\Event\PendingEvent;
 use Mautic\CoreBundle\Factory\ModelFactory;
+use Mautic\LeadBundle\Entity\Lead;
 use MauticPlugin\MautomicCrmBundle\Entity\Deal;
 use MauticPlugin\MautomicCrmBundle\Entity\Pipeline;
 use MauticPlugin\MautomicCrmBundle\Entity\PipelineRepository;
@@ -83,17 +84,17 @@ class CampaignSubscriber implements EventSubscriberInterface
             return;
         }
 
-        $dealName    = !empty($config['name']) ? (string) $config['name'] : 'Campaign Deal';
-        $description = !empty($config['description']) ? (string) $config['description'] : null;
-        $amount      = !empty($config['amount']) ? (string) $config['amount'] : null;
-        $currency    = !empty($config['currency']) ? (string) $config['currency'] : null;
+        $nameTemplate = !empty($config['name']) ? (string) $config['name'] : 'Campaign Deal';
+        $description  = !empty($config['description']) ? (string) $config['description'] : null;
+        $amount       = !empty($config['amount']) ? (string) $config['amount'] : null;
+        $currency     = !empty($config['currency']) ? (string) $config['currency'] : null;
 
         $contacts = $event->getContacts();
         $pending  = $event->getPending();
 
         foreach ($contacts as $logId => $contact) {
             $deal = new Deal();
-            $deal->setName($dealName);
+            $deal->setName($this->replaceContactTokens($nameTemplate, $contact));
             $deal->setPipeline($pipeline);
             $deal->setStage($stage);
             $deal->setContact($contact);
@@ -151,5 +152,29 @@ class CampaignSubscriber implements EventSubscriberInterface
         $firstStage = $pipeline->getStages()->first();
 
         return $firstStage instanceof Stage ? $firstStage : null;
+    }
+
+    private function replaceContactTokens(string $template, Lead $contact): string
+    {
+        return (string) preg_replace_callback(
+            '/\{contactfield=(\w+)\}/',
+            static function (array $matches) use ($contact): string {
+                $field = $matches[1];
+
+                $value = match ($field) {
+                    'firstname'  => $contact->getFirstname(),
+                    'lastname'   => $contact->getLastname(),
+                    'email'      => $contact->getEmail(),
+                    'company'    => $contact->getCompany(),
+                    'city'       => $contact->getCity(),
+                    'country'    => $contact->getCountry(),
+                    'phone'      => $contact->getPhone(),
+                    default      => $contact->getFieldValue($field),
+                };
+
+                return (string) ($value ?? '');
+            },
+            $template,
+        );
     }
 }
