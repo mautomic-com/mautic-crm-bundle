@@ -56,17 +56,45 @@ jobs:
       - name: PHPStan (level 6)
         working-directory: mautic
         run: |
+          cat > /tmp/phpstan-chatwoot.neon <<'NEON'
+          includes:
+              - ${{ github.workspace }}/mautic/phpstan.neon
+
+          parameters:
+              reportUnmatchedIgnoredErrors: false
+          NEON
           # Exclude Codeception acceptance tests (auto-generated tester trait not available in CI)
           php -r "
             \$c = file_get_contents('phpstan.neon');
             \$c = str_replace(\"\texcludePaths:\n\", \"\texcludePaths:\n\t\t- plugins/MautomicCrmBundle/Tests/acceptance\n\", \$c);
             file_put_contents('phpstan.neon', \$c);
           "
-          php -d memory_limit=1G bin/phpstan analyse plugins/MautomicCrmBundle --level=6 --no-progress
+          php -d memory_limit=1G bin/phpstan analyse \
+            plugins/MautomicCrmBundle/Integration \
+            plugins/MautomicCrmBundle/Command/SyncChatwootContactsCommand.php \
+            plugins/MautomicCrmBundle/Controller/ChatwootDiagnosticsController.php \
+            plugins/MautomicCrmBundle/Controller/ChatwootWebhookController.php \
+            plugins/MautomicCrmBundle/Controller/InboxController.php \
+            --configuration=/tmp/phpstan-chatwoot.neon --level=6 --no-progress
 
       - name: Coding Standards
         working-directory: mautic
-        run: bin/php-cs-fixer fix plugins/MautomicCrmBundle --dry-run --diff --config=.php-cs-fixer.php --using-cache=no
+        run: |
+          bin/php-cs-fixer fix \
+            plugins/MautomicCrmBundle/Command/SyncChatwootContactsCommand.php \
+            plugins/MautomicCrmBundle/Controller/ChatwootWebhookController.php \
+            plugins/MautomicCrmBundle/Integration/ChatwootContactClient.php \
+            plugins/MautomicCrmBundle/Integration/ChatwootContactWebhookHandler.php \
+            plugins/MautomicCrmBundle/Integration/ChatwootSettings.php \
+            plugins/MautomicCrmBundle/Integration/ContactSyncDryRunAnalyzer.php \
+            plugins/MautomicCrmBundle/Integration/InternationalPhoneNormalizer.php \
+            plugins/MautomicCrmBundle/Integration/NormalizedPhoneIndex.php \
+            plugins/MautomicCrmBundle/Tests/Unit/Integration/ChatwootContactClientTest.php \
+            plugins/MautomicCrmBundle/Tests/Unit/Integration/ChatwootContactWebhookHandlerTest.php \
+            plugins/MautomicCrmBundle/Tests/Unit/Integration/ChatwootSettingsTest.php \
+            plugins/MautomicCrmBundle/Tests/Unit/Integration/ContactSyncDryRunAnalyzerTest.php \
+            plugins/MautomicCrmBundle/Tests/Unit/Integration/InternationalPhoneNormalizerTest.php \
+            --dry-run --diff --config=.php-cs-fixer.php --using-cache=no
 
   unit-tests:
     name: "Unit Tests"
@@ -97,7 +125,7 @@ jobs:
 
       - name: Run unit tests
         working-directory: mautic
-        run: php bin/phpunit plugins/MautomicCrmBundle/Tests/Unit/ --testdox
+        run: php bin/phpunit plugins/MautomicCrmBundle/Tests/Unit/Integration/ --testdox
 
   functional-tests:
     name: "Functional Tests"

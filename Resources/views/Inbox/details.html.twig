@@ -1,0 +1,32 @@
+{% extends '@MauticCore/Default/content.html.twig' %}
+
+{% block headerTitle %}{{ 'mautomic_crm.inbox.title'|trans }}{% endblock %}
+
+{% block actions %}
+<a class="btn btn-default" href="{{ path('mautic_mautomic_crm_inbox_index') }}">{{ 'mautomic_crm.inbox.back'|trans }}</a>
+{% endblock %}
+
+{% block content %}
+<div class="panel panel-default"><div class="panel-body">
+{% if status != 'ok' %}
+    <p class="text-warning">{{ 'mautomic_crm.inbox.unavailable'|trans }}</p>
+{% else %}
+    <h3>{{ conversation.contact_name ?: ('#' ~ conversation.id) }}</h3>
+    <p class="text-muted">#{{ conversation.id }} · {{ conversation.status }}</p>
+    <hr>
+    <h4>{{ 'mautomic_crm.inbox.messages'|trans }}</h4>
+    {% if messages is empty %}<p class="text-muted">{{ 'mautomic_crm.inbox.no_messages'|trans }}</p>{% endif %}
+    {% for message in messages %}
+        <div class="well well-sm">
+            <strong>{{ message.sender_name ?: message.message_type|capitalize }}</strong>
+            <span class="text-muted pull-right">{{ message.created_at ? message.created_at|date('Y-m-d H:i') : '' }}</span>
+            <div>{{ message.content|nl2br }}</div>
+        </div>
+    {% endfor %}
+    <hr>
+    <p class="text-muted">{{ 'mautomic_crm.inbox.reply_disabled'|trans }}</p>
+    <textarea class="form-control" rows="3" disabled placeholder="{{ 'mautomic_crm.inbox.reply_placeholder'|trans }}"></textarea>
+    <button class="btn btn-primary mt-5" type="button" disabled>{{ 'mautomic_crm.inbox.send'|trans }}</button>
+{% endif %}
+</div></div>
+{% endblock %}

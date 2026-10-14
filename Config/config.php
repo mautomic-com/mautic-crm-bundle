@@ -10,6 +10,15 @@ return [
 
     'routes' => [
         'main' => [
+            'mautic_mautomic_crm_inbox_index' => [
+                'path'       => '/mautomic/inbox',
+                'controller' => 'MauticPlugin\\MautomicCrmBundle\\Controller\\InboxController::indexAction',
+            ],
+            'mautic_mautomic_crm_inbox_view' => [
+                'path'         => '/mautomic/inbox/{conversationId}',
+                'controller'   => 'MauticPlugin\\MautomicCrmBundle\\Controller\\InboxController::viewAction',
+                'requirements' => ['conversationId' => '\\d+'],
+            ],
             'mautic_mautomic_crm_dashboard_index' => [
                 'path'       => '/mautomic/dashboard',
                 'controller' => 'MauticPlugin\MautomicCrmBundle\Controller\DashboardController::indexAction',
@@ -62,6 +71,11 @@ return [
                 'path'       => '/mautomic-crm/settings',
                 'controller' => 'MauticPlugin\MautomicCrmBundle\Controller\SettingsController::indexAction',
             ],
+            'mautic_mautomic_crm_chatwoot_diagnostics' => [
+                'path'       => '/mautomic-crm/settings/chatwoot',
+                'controller' => 'MauticPlugin\MautomicCrmBundle\Controller\ChatwootDiagnosticsController::indexAction',
+                'method'     => 'GET',
+            ],
             'mautic_mautomic_crm_deal_field_index' => [
                 'path'       => '/mautomic-crm/settings/deal-fields/{page}',
                 'controller' => 'MauticPlugin\MautomicCrmBundle\Controller\DealFieldController::indexAction',
@@ -69,6 +83,14 @@ return [
             'mautic_mautomic_crm_deal_field_action' => [
                 'path'       => '/mautomic-crm/settings/deal-fields/{objectAction}/{objectId}',
                 'controller' => 'MauticPlugin\MautomicCrmBundle\Controller\DealFieldController::executeAction',
+            ],
+        ],
+        'public' => [
+            'mautic_mautomic_crm_chatwoot_webhook' => [
+                'path'       => '/mautomic/chatwoot/webhook',
+                'controller' => 'MauticPlugin\MautomicCrmBundle\Controller\ChatwootWebhookController::webhookAction',
+                'method'     => 'POST',
+                'format'     => 'json',
             ],
         ],
         'api' => [
@@ -136,6 +158,12 @@ return [
                 'parent'   => 'mautomic_crm.crm',
                 'priority' => 10,
             ],
+            'mautomic_crm.inbox' => [
+                'route'    => 'mautic_mautomic_crm_inbox_index',
+                'access'   => 'mautomic_crm:inbox:view',
+                'parent'   => 'mautomic_crm.crm',
+                'priority' => 15,
+            ],
             'mautomic_crm.pipelines' => [
                 'route'    => 'mautic_mautomic_crm_pipeline_index',
                 'access'   => 'mautomic_crm:pipelines:view',
@@ -156,6 +184,13 @@ return [
                 'route'     => 'mautic_mautomic_crm_settings_index',
                 'access'    => 'mautomic_crm:deals:view',
                 'priority'  => 18,
+            ],
+            'mautomic_crm.chatwoot.diagnostics.title' => [
+                'id'        => 'mautomic_crm_chatwoot_diagnostics',
+                'iconClass' => 'ri-pulse-line',
+                'route'     => 'mautic_mautomic_crm_chatwoot_diagnostics',
+                'access'    => 'admin',
+                'priority'  => 19,
             ],
         ],
     ],

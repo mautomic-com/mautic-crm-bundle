@@ -1,0 +1,12 @@
+{% extends '@MauticCore/Default/content.html.twig' %}
+{% block headerTitle %}{{ 'mautomic_crm.inbox.title'|trans }}{% endblock %}
+{% block content %}
+<div class="panel panel-default"><div class="panel-body">
+{% if status == 'unmapped' %}<p class="text-muted">{{ 'mautomic_crm.inbox.unmapped'|trans }}</p>
+{% elseif status != 'ok' %}<p class="text-warning">{{ 'mautomic_crm.inbox.unavailable'|trans }}</p>
+{% elseif conversations is empty %}<p class="text-muted">{{ 'mautomic_crm.inbox.empty'|trans }}</p>
+{% else %}<table class="table table-striped"><thead><tr><th>ID</th><th>Contact</th><th>Status</th><th>Last activity</th></tr></thead><tbody>
+{% for conversation in conversations %}<tr><td><a href="{{ path('mautic_mautomic_crm_inbox_view', {conversationId: conversation.id}) }}">{{ conversation.id }}</a></td><td>{{ conversation.contact_name ?: '-' }}</td><td>{{ conversation.status }}</td><td>{{ conversation.last_activity_at ? conversation.last_activity_at|date('Y-m-d H:i') : '-' }}</td></tr>{% endfor %}
+</tbody></table>{% endif %}
+</div></div>
+{% endblock %}

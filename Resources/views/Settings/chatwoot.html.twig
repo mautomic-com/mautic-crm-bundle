@@ -1,0 +1,52 @@
+{% extends '@MauticCore/Default/content.html.twig' %}
+
+{% block headerTitle %}{{ 'mautomic_crm.chatwoot.diagnostics.title'|trans }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <div class="alert alert-info">{{ 'mautomic_crm.chatwoot.diagnostics.safe_note'|trans }}</div>
+
+        <div class="panel panel-default">
+            <div class="panel-heading"><strong>{{ 'mautomic_crm.chatwoot.diagnostics.configuration'|trans }}</strong></div>
+            <div class="panel-body">
+                <dl class="dl-horizontal mb-0">
+                    <dt>{{ 'mautomic_crm.chatwoot.diagnostics.base_url'|trans }}</dt><dd>{{ base_url ?: ('mautomic_crm.chatwoot.diagnostics.not_configured'|trans) }}</dd>
+                    <dt>{{ 'mautomic_crm.chatwoot.diagnostics.api_token'|trans }}</dt><dd>{{ (api_token_configured ? 'mautomic_crm.chatwoot.diagnostics.configured' : 'mautomic_crm.chatwoot.diagnostics.not_configured')|trans }}</dd>
+                    <dt>{{ 'mautomic_crm.chatwoot.diagnostics.account_id'|trans }}</dt><dd>{{ account_id ?: ('mautomic_crm.chatwoot.diagnostics.not_configured'|trans) }}</dd>
+                    <dt>{{ 'mautomic_crm.chatwoot.diagnostics.webhook_secret'|trans }}</dt><dd>{{ (webhook_secret_configured ? 'mautomic_crm.chatwoot.diagnostics.configured' : 'mautomic_crm.chatwoot.diagnostics.not_configured')|trans }}</dd>
+                    <dt>{{ 'mautomic_crm.chatwoot.diagnostics.assignment'|trans }}</dt><dd>{{ (assignment_enabled ? 'mautomic_crm.chatwoot.diagnostics.enabled' : 'mautomic_crm.chatwoot.diagnostics.disabled')|trans }}</dd>
+                </dl>
+            </div>
+        </div>
+
+        <div class="panel panel-default">
+            <div class="panel-heading"><strong>{{ 'mautomic_crm.chatwoot.diagnostics.connection'|trans }}</strong></div>
+            <div class="panel-body">
+                {% if connection_status == 'connected' %}
+                    <span class="label label-success">{{ 'mautomic_crm.chatwoot.diagnostics.connected'|trans }}</span>
+                    {% if connected_name %}<span class="ml-sm">{{ connected_name }}</span>{% endif %}
+                {% else %}
+                    <span class="label label-danger">{{ 'mautomic_crm.chatwoot.diagnostics.unavailable'|trans }}</span>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="panel panel-default">
+            <div class="panel-heading"><strong>{{ 'mautomic_crm.chatwoot.diagnostics.agent_map'|trans }}</strong></div>
+            {% if agent_map is empty %}
+                <div class="panel-body text-muted">{{ 'mautomic_crm.chatwoot.diagnostics.no_mappings'|trans }}</div>
+            {% else %}
+                <div class="panel-body">
+                    <dl class="dl-horizontal mb-0">
+                        {% for mautic_user_id, chatwoot_agent_id in agent_map %}
+                            <dt>{{ 'mautomic_crm.chatwoot.diagnostics.mautic_user_id'|trans }} {{ mautic_user_id }}</dt>
+                            <dd>{{ 'mautomic_crm.chatwoot.diagnostics.chatwoot_agent_id'|trans }} {{ chatwoot_agent_id }}</dd>
+                        {% endfor %}
+                    </dl>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -19,6 +19,7 @@ class MautomicCrmPermissions extends AbstractPermissions
         $this->addExtendedPermissions(['deals']);
         $this->addExtendedPermissions(['tasks']);
         $this->addExtendedPermissions(['notes']);
+        $this->addStandardPermissions(['inbox']);
     }
 
     public function getName(): string
@@ -36,5 +37,6 @@ class MautomicCrmPermissions extends AbstractPermissions
         $this->addExtendedFormFields('mautomic_crm', 'deals', $builder, $data);
         $this->addExtendedFormFields('mautomic_crm', 'tasks', $builder, $data);
         $this->addExtendedFormFields('mautomic_crm', 'notes', $builder, $data);
+        $this->addStandardFormFields('mautomic_crm', 'inbox', $builder, $data);
     }
 }

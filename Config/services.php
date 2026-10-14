@@ -27,4 +27,6 @@ return function (ContainerConfigurator $configurator): void {
     $services->alias('mautic.mautomic_crm.model.deal_field', MauticPlugin\MautomicCrmBundle\Model\DealFieldModel::class)->public();
     $services->alias('mautic.mautomic_crm.model.task_queue', MauticPlugin\MautomicCrmBundle\Model\TaskQueueModel::class)->public();
     $services->alias('mautic.mautomic_crm.model.forecast', MauticPlugin\MautomicCrmBundle\Model\ForecastModel::class)->public();
+    $services->set(libphonenumber\PhoneNumberUtil::class)
+        ->factory([libphonenumber\PhoneNumberUtil::class, 'getInstance']);
 };
